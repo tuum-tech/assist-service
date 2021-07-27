@@ -24,7 +24,7 @@ services:
     volumes:
       - ${HOME}/.assist-data/assist-mongo-data:/data/db
     ports:
-      - 37017:27017
+      - 37018:27017
     environment:
       - MONGO_INITDB_ROOT_USERNAME=mongoadmin
       - MONGO_INITDB_ROOT_PASSWORD=mongopass

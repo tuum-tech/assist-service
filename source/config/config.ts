@@ -2,6 +2,29 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
+const MONGO_OPTIONS = {
+    useUnifiedTopology: true,
+    useNewUrlParser: true,
+    socketTimeoutMS: 30000,
+    keepAlive: true,
+    poolSize: 50,
+    autoIndex: false,
+    retryWrites: false,
+    authSource: 'admin'
+};
+
+const MONGO_USERNAME = process.env.MONGO_USERNAME || 'mongoadmin';
+const MONGO_PASSWORD = process.env.MONGO_PASSWORD || 'mongopass';
+const MONGO_HOST = `${process.env.MONGO_HOST}:${process.env.MONGO_PORT}/${process.env.MONGO_DATABASE}` || 'localhost:37018/assistdb';
+
+const MONGO = {
+    host: MONGO_HOST,
+    username: MONGO_USERNAME,
+    password: MONGO_PASSWORD,
+    options: MONGO_OPTIONS,
+    url: `mongodb://${MONGO_USERNAME}:${MONGO_PASSWORD}@${MONGO_HOST}`
+};
+
 const SERVER = {
     hostname: '0.0.0.0',
     port: process.env.SERVER_PORT || 2000,
@@ -28,15 +51,6 @@ const BLOCKCHAIN = {
     eidSidechain: EID_SIDECHAIN
 };
 
-const DEFAULT_MNEMONICS = 'curious push water point border mutual install govern message ordinary fish small';
-const DEFAULT_DID = 'did:elastos:iag8qwq1xPBpLsGv4zR4CmzLpLUkBNfPHX';
-const HIVEVAULT = {
-    hiveHost: process.env.HIVE_HOST || 'http://localhost:9001',
-    serviceAppID: process.env.ASSIST_SERVICE_APP_ID || DEFAULT_DID,
-    serviceAppMnemonics: process.env.ASSIST_SERVICE_APP_MNEMONICS || DEFAULT_MNEMONICS,
-    serviceUserMnemonics: process.env.ASSIST_SERVICE_USER_MNEMONICS || DEFAULT_MNEMONICS
-};
-
 const CRON = {
     interval: process.env.CRON_INTERVAL || 8
 };
@@ -51,9 +65,9 @@ const SMTP_CREDS = {
 };
 
 const config = {
+    mongo: MONGO,
     server: SERVER,
     blockchain: BLOCKCHAIN,
-    hiveVault: HIVEVAULT,
     cron: CRON,
     smtpCreds: SMTP_CREDS
 };

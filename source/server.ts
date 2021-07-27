@@ -3,10 +3,22 @@ import cors from 'cors';
 import express from 'express';
 import logging from './config/logging';
 import config from './config/config';
+import mongoose from 'mongoose';
 import healthCheckRoutes from './routes/v1/healthCheck';
+import eidSidechainRoutes from './routes/v1/eidSidechain';
 
 const NAMESPACE = 'Tuum Assist Service';
 const router = express();
+
+/** Connect to Mongo */
+mongoose
+    .connect(config.mongo.url, config.mongo.options)
+    .then((result) => {
+        logging.info(NAMESPACE, 'Mongo Connected');
+    })
+    .catch((error) => {
+        logging.error(NAMESPACE, error.message, error);
+    });
 
 /** Log the request */
 router.use((req, res, next) => {
@@ -35,14 +47,27 @@ router.use(
 router.use(cors({ origin: true }));
 
 /** Routes go here */
+/** Healthcheck Routes */
 router.use('/v1/healthCheck', healthCheckRoutes);
+/** Authentication Routes */
+// TODO:
+/** Elastos Mainchain Routes */
+// TODO:
+/** EID Sidechain Routes */
+router.use('/v1/eidSidechain', eidSidechainRoutes);
+/** ESC Sidechain Routes */
+// TODO:
 
 /** Error handling */
 router.use((req, res, next) => {
     const error = new Error('Not found');
 
     res.status(404).json({
-        message: error.message
+        _status: 'ERR',
+        _error: {
+            code: 404,
+            message: error.message
+        }
     });
 });
 
