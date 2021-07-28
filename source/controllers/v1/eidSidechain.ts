@@ -3,7 +3,7 @@ import mongoose from 'mongoose';
 import DidTx from '../../models/didTx';
 
 const createDIDTx = (req: Request, res: Response, next: NextFunction) => {
-    let { did, didRequest } = req.body;
+    let { didRequest } = req.body;
 
     const didTx = new DidTx({
         _id: new mongoose.Types.ObjectId(),
@@ -40,7 +40,7 @@ const getAllDIDTxs = (req: Request, res: Response, next: NextFunction) => {
         .then((results) => {
             return res.status(200).json({
                 _status: 'OK',
-                didtxs: results,
+                didtxes: results,
                 count: results.length
             });
         })

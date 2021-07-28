@@ -5,9 +5,10 @@ import logging from './config/logging';
 import config from './config/config';
 import mongoose from 'mongoose';
 import healthCheckRoutes from './routes/v1/healthCheck';
+import authRoutes from './routes/v1/user';
 import eidSidechainRoutes from './routes/v1/eidSidechain';
 
-const NAMESPACE = 'Tuum Assist Service';
+const NAMESPACE = 'Server';
 const router = express();
 
 /** Connect to Mongo */
@@ -49,8 +50,8 @@ router.use(cors({ origin: true }));
 /** Routes go here */
 /** Healthcheck Routes */
 router.use('/v1/healthCheck', healthCheckRoutes);
-/** Authentication Routes */
-// TODO:
+/** User authentication Routes */
+router.use('/v1/users', authRoutes);
 /** Elastos Mainchain Routes */
 // TODO:
 /** EID Sidechain Routes */
@@ -71,6 +72,6 @@ router.use((req, res, next) => {
     });
 });
 
-const httpServer = http.createServer(router);
-
-httpServer.listen(config.server.port, () => logging.info(NAMESPACE, `Server is running ${config.server.hostname}:${config.server.port}`));
+router.listen(config.server.port, () => {
+    logging.info(NAMESPACE, `Assist Service is running on ${config.server.hostname}:${config.server.port}`);
+});

@@ -43,106 +43,112 @@ curl http://localhost:2000/v1/healthCheck/ping
 
 ```yaml
 Request type: GET
-Url: /
+Url: /v1/healthCheck/ping
 Return:
     Success: { '_status': 'OK', 'message': 'pong' }
     Failure: { '_status': 'ERR', '_error': { 'code': 404, 'message': 'err_message' } }
 ```
 
-## Elastos ID Sidechain
-
-### Create a did transaction to be published by Assist Service
-
-```bash
-curl -XPOST http://localhost:2000/v1/eidSidechain/create/didTx -H "Content-Type: application/json" -d @test/did_tx.json
-```
-
-```yaml
-Request type: POST
-Url: /v1/eidSidechain/create/didTx
-Content-Type: 'application/json'
-Data: { 'didRequest': {} }
-Return:
-    Success:
-    {
-      '_status': 'OK',
-      'didTx': {
-        "_id": "61006dc73932a6bb4c0cf651",
-        "did": "did:elastos:ik8ChHLQozrqt1hBzXq2WSjMFsZ9JUoxat#primary",
-        "requestFrom": "Assist Service",
-        "didRequest": {},
-        "status": "Pending",
-        "walletUsed": "0x365b70f14e10b02bef7e463eca6aa3e75ca3cdb1",
-        "createdAt": "2021-07-27T20:34:15.127Z",
-        "updatedAt": "2021-07-27T20:34:15.127Z"
-      }
-    }
-    Failure: { '_status': 'ERR', '_error': { 'code': 404, 'message': 'err_message' } }
-```
-
-### Get all did transactions published by Assist Service
-
-```bash
-curl http://localhost:2000/v1/eidSidechain/get/didTxs
-```
-
-```yaml
-Request type: GET
-Url: /v1/eidSidechain/get/didTxs
-Return:
-    Success:
-    {
-      '_status': 'OK',
-      'didTxs': [{
-        "_id": "61006dc73932a6bb4c0cf651",
-        "did": "did:elastos:ik8ChHLQozrqt1hBzXq2WSjMFsZ9JUoxat#primary",
-        "requestFrom": "Assist Service",
-        "didRequest": {},
-        "status": "Pending",
-        "walletUsed": "0x365b70f14e10b02bef7e463eca6aa3e75ca3cdb1",
-        "createdAt": "2021-07-27T20:34:15.127Z",
-        "updatedAt": "2021-07-27T20:34:15.127Z"
-      }],
-      "count": 1
-    }
-    Failure: { 'status': 'ERR', 'error': { 'code': 401, 'message': 'err_message' } }
-```
-
 ## Authentication
 
-### TODO: Generate an API key
+### Register a new user
 
-1. Since we don't want users to pass in their mnemonics to the Assist Service, provide a local script that a user can run locally by passing in their mnemonics offline that generates an auth token
-2. Use the auth token from this script to then generate an API key that will be used by the user to interact with Assist API endpoints
-
-```bash
-curl -XPOST http://localhost:8000/v1/auth/generate_api_key -H "Content-Type: application/json" -d '{"jwt": "auth_token"}'
+```
+curl -XPOST  http://localhost:2000/v1/users/register -H "Content-Type: application/json" -d '{"username": "kiran", "password": "kiran"}'
 ```
 
 ```yaml
 Request type: POST
-Url: /v1/auth/generate_api_key
+Url: /v1/users/register
 Content-Type: 'application/json'
-Data: { 'jwt': 'auth_token' }
+Data: {"username": "kiran", "password": "kiran"}
 Return:
-    Success: { '_status': 'OK', 'api_key': 'api_key' }
+    Success:
+    {
+      '_status': 'OK',
+      "user": {
+        "_id": "6100af4013c4bce36af29eb0",
+        "username": "kiran",
+        "password": "$2a$10$yus3MuPIPOl7bsH7twFn/OMYnHzXu91gj0GMMo9k8JuTzgTNRrcW6",
+        "createdAt": "2021-07-28T01:13:36.333Z",
+        "updatedAt": "2021-07-28T01:13:36.333Z"
+      }
+    }
     Failure: { '_status': 'ERR', '_error': { 'code': 401, 'message': 'err_message' } }
 ```
 
-### TODO: Verify the API key
+### Generate an Auth token for the user
 
-1. Return whether the API key is valid along with other details about the API key
+```
+curl -XPOST  http://localhost:2000/v1/users/login -H "Content-Type: application/json" -d '{"username": "kiran", "password": "kiran"}'
+```
+
+```yaml
+Request type: POST
+Url: /v1/users/login
+Content-Type: 'application/json'
+Data: {"username": "kiran", "password": "kiran"}
+Return:
+    Success:
+    {
+      "_status": "OK",
+      "message": "Auth successful",
+      "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6ImtpcmFuIiwiaWF0IjoxNjI3NDM3MTU0LCJleHAiOjMyNTUyMzQzMDgsImlzcyI6ImRpZDplbGFzdG9zOmlhZzhxd3ExeFBCcExzR3Y0elI0Q216THBMVWtCTmZQSFgifQ.ADV-kIJIN4XofMdQSAT_zMq47g0bEWlc4GAMu3pNEGs",
+      "user": {
+        "_id": "6100af4013c4bce36af29eb0",
+        "username": "kiran"
+        "createdAt": "2021-07-28T01:13:36.333Z",
+        "updatedAt": "2021-07-28T01:13:36.333Z"
+      }
+    }
+    Failure: { '_status': 'ERR', '_error': { 'code': 401, 'message': 'err_message' } }
+```
+
+### Validate an Auth token
 
 ```bash
-curl http://localhost:8000/v1/auth/verify_api_key -H "Authorization: api_key $api_key"
+token="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6ImtpcmFuIiwiaWF0IjoxNjI3NDM3MTU0LCJleHAiOjMyNTUyMzQzMDgsImlzcyI6ImRpZDplbGFzdG9zOmlhZzhxd3ExeFBCcExzR3Y0elI0Q216THBMVWtCTmZQSFgifQ.ADV-kIJIN4XofMdQSAT_zMq47g0bEWlc4GAMu3pNEGs";
+curl http://localhost:2000/v1/users/validate -H "Authorization: Bearer ${token}"
 ```
 
 ```yaml
 Request type: GET
-Url: /v1/auth/verify_api_key
-Authorization: 'api_key 38b8c2c1093dd0fec383a9d9ac940515'
+Url: /v1/users/validate
+Authorization: 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9'
 Return:
-    Success: { '_status': 'OK' }
+    Success:
+    {
+      "_status": "OK",
+      "message": "Token validated"
+    }
+    Failure: { '_status': 'ERR', '_error': { 'code': 401, 'message': 'err_message' } }
+```
+
+### Get all users
+
+```bash
+token="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6ImtpcmFuIiwiaWF0IjoxNjI3NDM3MTU0LCJleHAiOjMyNTUyMzQzMDgsImlzcyI6ImRpZDplbGFzdG9zOmlhZzhxd3ExeFBCcExzR3Y0elI0Q216THBMVWtCTmZQSFgifQ.ADV-kIJIN4XofMdQSAT_zMq47g0bEWlc4GAMu3pNEGs";
+curl http://localhost:2000/v1/users/get/all -H "Authorization: Bearer ${token}"
+```
+
+```yaml
+Request type: GET
+Url: /v1/users/get/all
+Authorization: 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9'
+Return:
+    Success:
+    {
+      "_status": "OK",
+      "users": [
+        {
+          "_id": "6100af4013c4bce36af29eb0",
+          "username": "kiran",
+          "createdAt": "2021-07-28T01:13:36.333Z",
+          "updatedAt": "2021-07-28T01:13:36.333Z"
+        }
+      ],
+      "count": 1
+    }
     Failure: { '_status': 'ERR', '_error': { 'code': 401, 'message': 'err_message' } }
 ```
 
@@ -197,6 +203,69 @@ Return:
     }
   Failure:
     { "_status": "ERR", "_error": { "code": 401, "message": "err_message" } }
+```
+
+## Elastos ID Sidechain
+
+### Create a did transaction to be published by Assist Service
+
+```bash
+token="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6ImtpcmFuIiwiaWF0IjoxNjI3NDM3MTU0LCJleHAiOjMyNTUyMzQzMDgsImlzcyI6ImRpZDplbGFzdG9zOmlhZzhxd3ExeFBCcExzR3Y0elI0Q216THBMVWtCTmZQSFgifQ.ADV-kIJIN4XofMdQSAT_zMq47g0bEWlc4GAMu3pNEGs";
+curl -XPOST http://localhost:2000/v1/eidSidechain/create/didTx -H "Authorization: Bearer ${token}" -H "Content-Type: application/json" -d @test/did_tx.json
+```
+
+```yaml
+Request type: POST
+Url: /v1/eidSidechain/create/didTx
+Authorization: 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9'
+Content-Type: 'application/json'
+Data: { 'didRequest': {} }
+Return:
+    Success:
+    {
+      '_status': 'OK',
+      'didTx': {
+        "_id": "61006dc73932a6bb4c0cf651",
+        "did": "did:elastos:ik8ChHLQozrqt1hBzXq2WSjMFsZ9JUoxat#primary",
+        "requestFrom": "Assist Service",
+        "didRequest": {},
+        "status": "Pending",
+        "walletUsed": "0x365b70f14e10b02bef7e463eca6aa3e75ca3cdb1",
+        "createdAt": "2021-07-27T20:34:15.127Z",
+        "updatedAt": "2021-07-27T20:34:15.127Z"
+      }
+    }
+    Failure: { '_status': 'ERR', '_error': { 'code': 404, 'message': 'err_message' } }
+```
+
+### Get all did transactions published by Assist Service
+
+```bash
+token="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6ImtpcmFuIiwiaWF0IjoxNjI3NDM3MTU0LCJleHAiOjMyNTUyMzQzMDgsImlzcyI6ImRpZDplbGFzdG9zOmlhZzhxd3ExeFBCcExzR3Y0elI0Q216THBMVWtCTmZQSFgifQ.ADV-kIJIN4XofMdQSAT_zMq47g0bEWlc4GAMu3pNEGs";
+curl http://localhost:2000/v1/eidSidechain/get/didTxs -H "Authorization: Bearer ${token}"
+```
+
+```yaml
+Request type: GET
+Url: /v1/eidSidechain/get/didTxs
+Authorization: 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9'
+Return:
+    Success:
+    {
+      '_status': 'OK',
+      'didTxs': [{
+        "_id": "61006dc73932a6bb4c0cf651",
+        "did": "did:elastos:ik8ChHLQozrqt1hBzXq2WSjMFsZ9JUoxat#primary",
+        "requestFrom": "Assist Service",
+        "didRequest": {},
+        "status": "Pending",
+        "walletUsed": "0x365b70f14e10b02bef7e463eca6aa3e75ca3cdb1",
+        "createdAt": "2021-07-27T20:34:15.127Z",
+        "updatedAt": "2021-07-27T20:34:15.127Z"
+      }],
+      "count": 1
+    }
+    Failure: { 'status': 'ERR', 'error': { 'code': 401, 'message': 'err_message' } }
 ```
 
 ## Elastos Mainchain

@@ -2,6 +2,21 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
+const SERVER_TOKEN_EXPIRETIME = process.env.SERVER_TOKEN_EXPIRETIME || 3600;
+const SERVER_TOKEN_ISSUER = process.env.SERVER_TOKEN_ISSUER || 'did:elastos:iag8qwq1xPBpLsGv4zR4CmzLpLUkBNfPHX';
+const SERVER_TOKEN_SECRET = process.env.SERVER_TOKEN_SECRET || 'assist-service-key';
+
+const SERVER = {
+    hostname: '0.0.0.0',
+    port: process.env.SERVER_PORT || 2000,
+    production: process.env.PRODUCTION || false,
+    token: {
+        expireTime: SERVER_TOKEN_EXPIRETIME,
+        issuer: SERVER_TOKEN_ISSUER,
+        secret: SERVER_TOKEN_SECRET
+    }
+};
+
 const MONGO_OPTIONS = {
     useUnifiedTopology: true,
     useNewUrlParser: true,
@@ -9,8 +24,9 @@ const MONGO_OPTIONS = {
     keepAlive: true,
     poolSize: 50,
     autoIndex: false,
-    retryWrites: false,
-    authSource: 'admin'
+    retryWrites: SERVER.production === true ? true : false,
+    authSource: 'admin',
+    w: 'majority'
 };
 
 const MONGO_USERNAME = process.env.MONGO_USERNAME || 'mongoadmin';
@@ -22,13 +38,7 @@ const MONGO = {
     username: MONGO_USERNAME,
     password: MONGO_PASSWORD,
     options: MONGO_OPTIONS,
-    url: `mongodb://${MONGO_USERNAME}:${MONGO_PASSWORD}@${MONGO_HOST}`
-};
-
-const SERVER = {
-    hostname: '0.0.0.0',
-    port: process.env.SERVER_PORT || 2000,
-    production: process.env.PRODUCTION || false
+    url: SERVER.production === true ? `mongodb+srv://${MONGO_USERNAME}:${MONGO_PASSWORD}@${MONGO_HOST}` : `mongodb://${MONGO_USERNAME}:${MONGO_PASSWORD}@${MONGO_HOST}`
 };
 
 const DEFAULT_WALLET =
@@ -65,8 +75,8 @@ const SMTP_CREDS = {
 };
 
 const config = {
-    mongo: MONGO,
     server: SERVER,
+    mongo: MONGO,
     blockchain: BLOCKCHAIN,
     cron: CRON,
     smtpCreds: SMTP_CREDS
