@@ -4,7 +4,7 @@ import extractJWT from '../../middleware/extractJWT';
 
 const router = express.Router();
 
-router.get('/get/didTxs', extractJWT, controller.getAllDIDTxs);
+router.get('/get/didTxes', extractJWT, controller.getAllDIDTxes);
 router.post('/create/didTx', extractJWT, controller.createDIDTx);
 
 export = router;

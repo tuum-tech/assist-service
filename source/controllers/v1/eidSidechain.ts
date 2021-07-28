@@ -34,7 +34,7 @@ const createDIDTx = (req: Request, res: Response, next: NextFunction) => {
         });
 };
 
-const getAllDIDTxs = (req: Request, res: Response, next: NextFunction) => {
+const getAllDIDTxes = (req: Request, res: Response, next: NextFunction) => {
     DidTx.find()
         .exec()
         .then((results) => {
@@ -58,5 +58,5 @@ const getAllDIDTxs = (req: Request, res: Response, next: NextFunction) => {
 
 export default {
     createDIDTx,
-    getAllDIDTxs
+    getAllDIDTxes
 };

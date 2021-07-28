@@ -242,18 +242,18 @@ Return:
 
 ```bash
 token="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6ImtpcmFuIiwiaWF0IjoxNjI3NDM3MTU0LCJleHAiOjMyNTUyMzQzMDgsImlzcyI6ImRpZDplbGFzdG9zOmlhZzhxd3ExeFBCcExzR3Y0elI0Q216THBMVWtCTmZQSFgifQ.ADV-kIJIN4XofMdQSAT_zMq47g0bEWlc4GAMu3pNEGs";
-curl http://localhost:2000/v1/eidSidechain/get/didTxs -H "Authorization: Bearer ${token}"
+curl http://localhost:2000/v1/eidSidechain/get/didTxes -H "Authorization: Bearer ${token}"
 ```
 
 ```yaml
 Request type: GET
-Url: /v1/eidSidechain/get/didTxs
+Url: /v1/eidSidechain/get/didTxes
 Authorization: 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9'
 Return:
     Success:
     {
       '_status': 'OK',
-      'didTxs': [{
+      'didtxes': [{
         "_id": "61006dc73932a6bb4c0cf651",
         "did": "did:elastos:ik8ChHLQozrqt1hBzXq2WSjMFsZ9JUoxat#primary",
         "requestFrom": "Assist Service",
