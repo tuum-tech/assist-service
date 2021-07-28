@@ -5,9 +5,11 @@ import DidTx from '../../models/didTx';
 const createDIDTx = (req: Request, res: Response, next: NextFunction) => {
     let { didRequest } = req.body;
 
+    let authTokenDecoded = res.locals.jwt;
+
     const didTx = new DidTx({
         _id: new mongoose.Types.ObjectId(),
-        did: 'did:elastos:ik8ChHLQozrqt1hBzXq2WSjMFsZ9JUoxat#primary',
+        did: authTokenDecoded['username'],
         requestFrom: 'Assist Service',
         didRequest,
         status: 'Pending',
