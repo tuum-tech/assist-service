@@ -5,7 +5,7 @@ import logging from '../../config/logging';
 import User from '../../models/user';
 import signJWT from '../../functions/signJTW';
 
-const NAMESPACE = 'User';
+const NAMESPACE = 'Controller: User';
 
 const validateToken = (req: Request, res: Response, next: NextFunction) => {
     logging.info(NAMESPACE, 'Token validated, user authorized.');
@@ -45,13 +45,14 @@ const register = (req: Request, res: Response, next: NextFunction) => {
                     user
                 });
             })
-            .catch((error) => {
+            .catch((err) => {
+                logging.error(NAMESPACE, 'Error while trying to register a new user: ', err);
+
                 return res.status(500).json({
                     _status: 'ERR',
                     _error: {
                         code: 500,
-                        message: error.message,
-                        error
+                        error: err
                     }
                 });
             });
@@ -100,7 +101,7 @@ const login = (req: Request, res: Response, next: NextFunction) => {
                             });
                         } else if (token) {
                             // We don't want to show the password during login
-                            let _user = JSON.parse(JSON.stringify(users[0]));
+                            const _user = JSON.parse(JSON.stringify(users[0]));
                             delete _user['password'];
                             return res.status(200).json({
                                 _status: 'OK',
@@ -116,7 +117,7 @@ const login = (req: Request, res: Response, next: NextFunction) => {
         .catch((err) => {
             logging.error(NAMESPACE, 'Error while logging in: ', err);
 
-            res.status(500).json({
+            return res.status(500).json({
                 _status: 'ERR',
                 _error: {
                     code: 500,
@@ -137,13 +138,14 @@ const getAllUsers = (req: Request, res: Response, next: NextFunction) => {
                 count: users.length
             });
         })
-        .catch((error) => {
+        .catch((err) => {
+            logging.error(NAMESPACE, 'Error while trying to get all users: ', err);
+
             return res.status(500).json({
                 _status: 'ERR',
                 _error: {
                     code: 500,
-                    message: error.message,
-                    error
+                    error: err
                 }
             });
         });

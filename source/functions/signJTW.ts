@@ -3,7 +3,7 @@ import config from '../config/config';
 import logging from '../config/logging';
 import IUser from '../interfaces/user';
 
-const NAMESPACE = 'Auth';
+const NAMESPACE = 'Function: User Auth';
 
 const signJWT = (user: IUser, callback: (error: Error | null, token: string | null) => void): void => {
     var timeSinceEpoch = new Date().getTime();

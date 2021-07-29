@@ -3,7 +3,7 @@ import config from '../config/config';
 import logging from '../config/logging';
 import { Request, Response, NextFunction } from 'express';
 
-const NAMESPACE = 'Auth';
+const NAMESPACE = 'Middleware: User Auth';
 
 const extractJWT = (req: Request, res: Response, next: NextFunction) => {
     logging.info(NAMESPACE, 'Validating token');

@@ -26,7 +26,7 @@ const MONGO_OPTIONS = {
     autoIndex: false,
     retryWrites: SERVER.production === true ? true : false,
     authSource: 'admin',
-    w: 'majority'
+    writeConcern: 'majority'
 };
 
 const MONGO_USERNAME = process.env.MONGO_USERNAME || 'mongoadmin';
