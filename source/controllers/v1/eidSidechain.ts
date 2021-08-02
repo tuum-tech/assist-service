@@ -37,7 +37,7 @@ const createDIDTx = (req: Request, res: Response, next: NextFunction) => {
                 _status: 'ERR',
                 _error: {
                     code: 500,
-                    error: err
+                    message: err
                 }
             });
         });
@@ -60,7 +60,7 @@ const getAllDIDTxes = (req: Request, res: Response, next: NextFunction) => {
                 _status: 'ERR',
                 _error: {
                     code: 500,
-                    error: err
+                    message: err
                 }
             });
         });
@@ -94,7 +94,7 @@ const getDIDTxFromConfirmationId = (req: Request, res: Response, next: NextFunct
                 _status: 'ERR',
                 _error: {
                     code: 500,
-                    error: err
+                    message: err
                 }
             });
         });

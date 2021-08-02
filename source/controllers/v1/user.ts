@@ -25,8 +25,7 @@ const register = (req: Request, res: Response, next: NextFunction) => {
                 _status: 'ERR',
                 _error: {
                     code: 401,
-                    message: hashError.message,
-                    error: hashError
+                    message: hashError
                 }
             });
         }
@@ -52,7 +51,7 @@ const register = (req: Request, res: Response, next: NextFunction) => {
                     _status: 'ERR',
                     _error: {
                         code: 500,
-                        error: err
+                        message: err
                     }
                 });
             });
@@ -95,8 +94,7 @@ const login = (req: Request, res: Response, next: NextFunction) => {
                                 _status: 'ERR',
                                 _error: {
                                     code: 500,
-                                    message: _error.message,
-                                    error: _error
+                                    message: _error
                                 }
                             });
                         } else if (token) {
@@ -121,7 +119,7 @@ const login = (req: Request, res: Response, next: NextFunction) => {
                 _status: 'ERR',
                 _error: {
                     code: 500,
-                    error: err
+                    message: err
                 }
             });
         });
@@ -145,7 +143,7 @@ const getAllUsers = (req: Request, res: Response, next: NextFunction) => {
                 _status: 'ERR',
                 _error: {
                     code: 500,
-                    error: err
+                    message: err
                 }
             });
         });

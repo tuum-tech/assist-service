@@ -17,8 +17,7 @@ const extractJWT = (req: Request, res: Response, next: NextFunction) => {
                     _status: 'ERR',
                     _error: {
                         code: 404,
-                        message: error,
-                        error
+                        message: error
                     }
                 });
             } else {

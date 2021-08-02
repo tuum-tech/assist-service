@@ -4,6 +4,7 @@ import express from 'express';
 import logging from './config/logging';
 import config from './config/config';
 import mongoose from 'mongoose';
+import cronEIDSidechain from './cron/v1/eidSidechain';
 import healthCheckRoutes from './routes/v1/healthCheck';
 import authRoutes from './routes/v1/user';
 import eidSidechainRoutes from './routes/v1/eidSidechain';
@@ -74,4 +75,6 @@ router.use((req, res, next) => {
 
 router.listen(config.server.port, () => {
     logging.info(NAMESPACE, `Assist Service is running on ${config.server.hostname}:${config.server.port}`);
+
+    cronEIDSidechain.publishDIDTx();
 });
