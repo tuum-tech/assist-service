@@ -6,8 +6,8 @@ export default interface IDidTx extends Document {
     didRequest: object;
     memo: string;
     status: string;
-    blockchainTxId: string;
-    blockchainTx: object;
+    blockchainTxHash: string;
+    blockchainTxReceipt: object;
     extraInfo: object;
     walletUsed: string;
 }

@@ -8,8 +8,8 @@ const DidTxSchema: Schema = new Schema(
         didRequest: { type: Object, required: true },
         memo: { type: String },
         status: { type: String, required: true },
-        blockchainTxId: { type: String },
-        blockchainTx: { type: Object },
+        blockchainTxHash: { type: String },
+        blockchainTxReceipt: { type: Object },
         extraInfo: { type: Object },
         walletUsed: { type: String, required: true }
     },

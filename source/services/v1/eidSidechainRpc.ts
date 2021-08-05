@@ -6,78 +6,23 @@ const NAMESPACE = 'Service: EID Sidechain';
 const Web3 = require('web3');
 
 async function getBlockHeight() {
-        const web3 = new Web3(config.blockchain.eidSidechain.rpcUrl);
-        const res: any = await web3.eth.getBlockNumber()
-        .then((height: any ) => {
-            if(height) {
-                return {
-                    _status: 'OK',
-                    height
-                }
-            } else {
-                return {
-                        _status: 'ERR',
-                        _error: {
-                            code: 401,
-                            message: 'Could not get height'
-                        }
-                }
-            }
-        })
-        .catch((err: any) => {
-            logging.error(NAMESPACE, 'Error while trying to get block height: ', err);
-
-            return {
-                _status: 'ERR',
-                _error: {
-                    code: 500,
-                    message: err
-                }
-            }
-        }); 
-        return res;
-}
-
-async function sendTx(signedTx: any) {
-    var Tx = require('@ethereumjs/tx').Transaction;
-    var privateKey = Buffer.from('e331b6d69882b4cb4ea581d88e0b604039a3de5967688d3dcffdd2270c0fd109', 'hex');
-
-    var rawTx = {
-        nonce: '0x00',
-        gasPrice: '0x09184e72a000',
-        gasLimit: '0x2710',
-        to: '0x0000000000000000000000000000000000000000',
-        value: '0x00',
-        data: '0x7f7465737432000000000000000000000000000000000000000000000000000000600057'
-    }
-
-    var tx = new Tx(rawTx, {'chain':'ropsten'});
-    tx.sign(privateKey);
-
-    var serializedTx = tx.serialize();
-
-    // console.log(serializedTx.toString('hex'));
-    // 0xf889808609184e72a00082271094000000000000000000000000000000000000000080a47f74657374320000000000000000000000000000000000000000000000000000006000571ca08a8bbf888cfa37bbf0bb965423625641fc956967b81d12e23709cead01446075a01ce999b56a8a88504be365442ea61239198e23d1fce7d00fcfc5cd3b44b7215f
-
-    web3.eth.sendSignedTransaction('0x' + serializedTx.toString('hex'))
-    .on('receipt', console.log);
-
     const web3 = new Web3(config.blockchain.eidSidechain.rpcUrl);
-        const res: any = await web3.eth.send_raw_transaction(signedTx)
-        .then((height: any ) => {
-            if(height) {
+    const res: any = await web3.eth
+        .getBlockNumber()
+        .then((height: any) => {
+            if (height) {
                 return {
                     _status: 'OK',
                     height
-                }
+                };
             } else {
                 return {
-                        _status: 'ERR',
-                        _error: {
-                            code: 401,
-                            message: 'Could not get height'
-                        }
-                }
+                    _status: 'ERR',
+                    _error: {
+                        code: 401,
+                        message: 'Could not get height'
+                    }
+                };
             }
         })
         .catch((err: any) => {
@@ -89,27 +34,83 @@ async function sendTx(signedTx: any) {
                     code: 500,
                     message: err
                 }
-            }
-        }); 
-        return res;
+            };
+        });
+    return res;
 }
 
+async function sendTx(wallet: any, payload: string) {
+    const PUBLISH_CONTRACT_ABI = [
+        {
+            inputs: [],
+            stateMutability: 'nonpayable',
+            payable: false,
+            type: 'constructor'
+        },
+        {
+            inputs: [
+                {
+                    internalType: 'string',
+                    name: 'data',
+                    type: 'string'
+                }
+            ],
+            name: 'publishDidTransaction',
+            outputs: [],
+            stateMutability: 'nonpayable',
+            payable: false,
+            type: 'function'
+        }
+    ];
 
-    def send_raw_transaction(self, signed_transaction):
-        LOG.info("Sending transaction to the DID sidechain...")
+    let web3 = new Web3(config.blockchain.eidSidechain.rpcUrl);
+    let contract = new web3.eth.Contract(PUBLISH_CONTRACT_ABI, config.blockchain.eidSidechain.contractAddress);
 
-        try:
-            w3 = Web3(Web3.HTTPProvider(self.sidechain_rpc))
-            tx = w3.eth.send_raw_transaction(signed_transaction.rawTransaction)
-            return {
-                "tx_id": tx.hex(),
-                "error": None
-            }
-        except Exception as e:
-            LOG.info(f"Error while sending transactions to the DID sidechain: {str(e)}")
-            return {
-                "tx_id": None,
-                "error": str(e)
-            }
+    const account = web3.eth.accounts.decrypt(wallet, config.blockchain.eidSidechain.wallets.walletPass);
+    const walletAddress = web3.utils.toChecksumAddress(account['address']);
+    const privateKey = account['privateKey'];
 
-export default { getBlockHeight };
+    let data = contract.methods.publishDidTransaction(payload).encodeABI();
+    let nonce: any = await web3.eth.getTransactionCount(walletAddress).then((n: any) => {
+        return n;
+    });
+    let gas = 1000000;
+    try {
+        // Estimate gas cost
+        gas = await contract.methods.publishDidTransaction(payload).estimateGas({
+            from: walletAddress,
+            gas: 1000000
+        });
+    } catch (error) {
+        logging.info(NAMESPACE, 'Error while trying to estimate gas:', error);
+    }
+    let gasPrice = await web3.eth.getGasPrice();
+
+    let to = web3.utils.toChecksumAddress(config.blockchain.eidSidechain.contractAddress);
+
+    const tx = {
+        nonce,
+        to,
+        gas,
+        gasPrice,
+        data,
+        chainId: config.blockchain.eidSidechain.chainId
+    };
+
+    let signedTx: any = await web3.eth.accounts.signTransaction(tx, privateKey).then((result: any) => {
+        return result;
+    });
+
+    let txDetails = {
+        txHash: signedTx['transactionHash'],
+        txReceipt: {}
+    };
+
+    txDetails['txReceipt'] = await web3.eth.sendSignedTransaction(signedTx['rawTransaction']).then((receipt: any) => {
+        return receipt;
+    });
+
+    return txDetails;
+}
+
+export default { getBlockHeight, sendTx };
