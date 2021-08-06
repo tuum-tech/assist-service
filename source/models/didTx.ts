@@ -4,14 +4,16 @@ import IDidTx from '../interfaces/didTx';
 const DidTxSchema: Schema = new Schema(
     {
         did: { type: String, required: true },
-        requestFrom: { type: Object, required: true },
+        requestFrom: {
+            username: { type: String, required: true }
+        },
         didRequest: { type: Object, required: true },
         memo: { type: String },
         status: { type: String, required: true },
         blockchainTxHash: { type: String },
         blockchainTxReceipt: { type: Object },
         extraInfo: { type: Object },
-        walletUsed: { type: String, required: true }
+        walletUsed: { type: String }
     },
     {
         timestamps: true

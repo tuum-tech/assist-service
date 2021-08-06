@@ -1,8 +1,12 @@
 import { Document } from 'mongoose';
 
+interface IRequestFrom {
+    username: string;
+}
+
 export default interface IDidTx extends Document {
     did: string;
-    requestFrom: object;
+    requestFrom: IRequestFrom;
     didRequest: object;
     memo: string;
     status: string;

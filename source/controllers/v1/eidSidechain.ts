@@ -1,23 +1,89 @@
 import { NextFunction, Request, Response } from 'express';
+import { Base64 } from 'js-base64';
 import mongoose from 'mongoose';
 import config from '../../config/config';
 import logging from '../../config/logging';
 import DidTx from '../../models/didTx';
+import User from '../../models/user';
 
 const NAMESPACE = 'Controller: EID Sidechain';
 
 const createDIDTx = (req: Request, res: Response, next: NextFunction) => {
-    let { didRequest } = req.body;
+    const authTokenDecoded = res.locals.jwt || { username: config.user.defaultUsername };
+    const username = authTokenDecoded['username'];
 
-    let authTokenDecoded = res.locals.jwt || { username: 'kiran' };
+    let { didRequest, memo } = req.body;
+    let did = null;
+    try {
+        let didRequestPayload = didRequest['payload'];
+        didRequestPayload = JSON.parse(Base64.decode(didRequestPayload + '='.repeat(didRequestPayload.length % 4)));
+        did = didRequestPayload['id'].replace('did:elastos:', '').split('#')[0];
+    } catch (err) {
+        logging.error(NAMESPACE, 'Error while trying to retrieve DID from the payload: ', err);
+        return res.status(500).json({
+            _status: 'ERR',
+            _error: {
+                code: 500,
+                message: err
+            }
+        });
+    }
+
+    // TODO: Check if requestFrom DID is valid by resolving it
+
+    // TODO: Verify whether the given payload is valid by trying to create a transaction out of it
+
+    // Check the number of requests made by the caller DID
+    User.find({ username })
+        .exec()
+        .then((users) => {
+            if (users.length !== 1) {
+                return res.status(401).json({
+                    _status: 'ERR',
+                    _error: {
+                        code: 401,
+                        message: 'Unauthorized'
+                    }
+                });
+            }
+            let user = users[0];
+            let count: number = user.requests.premiumEndpoints.today;
+            if (count >= config.user.premiumEndpointsDailyLimit) {
+                let err = 'The user "' + user.username + '" has reached the daily API call limit of ' + config.user.premiumEndpointsDailyLimit;
+                logging.error(NAMESPACE, 'Error while trying to create a DID transaction: ', err);
+
+                // TODO Remove this comment when we have a cronjob that resets the daily limit
+                /* return res.status(401).json({
+                    _status: 'ERR',
+                    _error: {
+                        code: 401,
+                        message: err
+                    }
+                }); */
+            }
+            user.requests.premiumEndpoints.today += 1;
+            user.requests.premiumEndpoints.all += 1;
+            user.save();
+        })
+        .catch((err) => {
+            logging.error(NAMESPACE, 'Error while trying to create a DID transaction: ', err);
+
+            return res.status(500).json({
+                _status: 'ERR',
+                _error: {
+                    code: 500,
+                    message: err
+                }
+            });
+        });
 
     const didTx = new DidTx({
         _id: new mongoose.Types.ObjectId(),
-        did: config.server.token.issuer,
-        requestFrom: authTokenDecoded['username'],
+        did,
+        requestFrom: { username },
         didRequest,
-        status: 'Pending',
-        walletUsed: '0x365b70f14e10b02bef7e463eca6aa3e75ca3cdb1'
+        memo,
+        status: 'Pending'
     });
 
     return didTx

@@ -1,6 +1,7 @@
 import { NextFunction, Request, Response } from 'express';
 import mongoose from 'mongoose';
 import bcryptjs from 'bcryptjs';
+import config from '../../config/config';
 import logging from '../../config/logging';
 import User from '../../models/user';
 import signJWT from '../../functions/signJTW';
@@ -33,7 +34,20 @@ const register = (req: Request, res: Response, next: NextFunction) => {
         const _user = new User({
             _id: new mongoose.Types.ObjectId(),
             username,
-            password: hash
+            password: hash,
+            accountType: config.user.freeAcountType,
+            requests: {
+                freeEndpoints: {
+                    today: 0,
+                    all: 0,
+                    dailyLimit: config.user.freeEndpointsDailyLimit
+                },
+                premiumEndpoints: {
+                    today: 0,
+                    all: 0,
+                    dailyLimit: config.user.premiumEndpointsDailyLimit
+                }
+            }
         });
 
         return _user

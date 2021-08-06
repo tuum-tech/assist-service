@@ -102,13 +102,9 @@ async function sendTx(wallet: any, payload: string) {
     });
 
     let txDetails = {
-        txHash: signedTx['transactionHash'],
-        txReceipt: {}
+        rawTx: signedTx['rawTransaction'],
+        walletUsed: walletAddress
     };
-
-    txDetails['txReceipt'] = await web3.eth.sendSignedTransaction(signedTx['rawTransaction']).then((receipt: any) => {
-        return receipt;
-    });
 
     return txDetails;
 }
