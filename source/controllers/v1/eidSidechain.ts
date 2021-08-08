@@ -13,7 +13,7 @@ const createDIDTx = (req: Request, res: Response, next: NextFunction) => {
     const username = authTokenDecoded['username'];
 
     let { didRequest, memo } = req.body;
-    let did = null;
+    let did: any = null;
     try {
         let didRequestPayload = didRequest['payload'];
         didRequestPayload = JSON.parse(Base64.decode(didRequestPayload + '='.repeat(didRequestPayload.length % 4)));
@@ -61,48 +61,46 @@ const createDIDTx = (req: Request, res: Response, next: NextFunction) => {
                     }
                 }); */
             }
-            user.requests.premiumEndpoints.today += 1;
-            user.requests.premiumEndpoints.all += 1;
-            user.save();
+            const didTx = new DidTx({
+                _id: new mongoose.Types.ObjectId(),
+                did,
+                requestFrom: { username },
+                didRequest,
+                memo,
+                status: 'Pending'
+            });
+            didTx
+                .save()
+                .then((result) => {
+                    const _result = JSON.parse(JSON.stringify(result));
+                    _result['confirmation_id'] = _result['_id'];
+                    user.requests.premiumEndpoints.today += 1;
+                    user.requests.premiumEndpoints.all += 1;
+                    user.save();
+                    return res.status(201).json({
+                        _status: 'OK',
+                        didTx: _result
+                    });
+                })
+                .catch((err) => {
+                    logging.error(NAMESPACE, 'Error while trying to save the DID tx to the database: ', err);
+
+                    return res.status(500).json({
+                        _status: 'ERR',
+                        _error: {
+                            code: 500,
+                            message: err
+                        }
+                    });
+                });
         })
         .catch((err) => {
-            logging.error(NAMESPACE, 'Error while trying to create a DID transaction: ', err);
+            logging.error(NAMESPACE, `Error while trying to validate the user '${username}': `, err);
 
-            return res.status(500).json({
+            return res.status(401).json({
                 _status: 'ERR',
                 _error: {
-                    code: 500,
-                    message: err
-                }
-            });
-        });
-
-    const didTx = new DidTx({
-        _id: new mongoose.Types.ObjectId(),
-        did,
-        requestFrom: { username },
-        didRequest,
-        memo,
-        status: 'Pending'
-    });
-
-    return didTx
-        .save()
-        .then((result) => {
-            const _result = JSON.parse(JSON.stringify(result));
-            _result['confirmation_id'] = _result['_id'];
-            return res.status(201).json({
-                _status: 'OK',
-                didTx: _result
-            });
-        })
-        .catch((err) => {
-            logging.error(NAMESPACE, 'Error while trying to create a DID transaction: ', err);
-
-            return res.status(500).json({
-                _status: 'ERR',
-                _error: {
-                    code: 500,
+                    code: 401,
                     message: err
                 }
             });

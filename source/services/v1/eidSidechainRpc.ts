@@ -39,7 +39,7 @@ async function getBlockHeight() {
     return res;
 }
 
-async function sendTx(wallet: any, payload: string) {
+async function sendTx(wallet: any, payload: string, index: number) {
     const PUBLISH_CONTRACT_ABI = [
         {
             inputs: [],
@@ -71,8 +71,10 @@ async function sendTx(wallet: any, payload: string) {
     const privateKey = account['privateKey'];
 
     let data = contract.methods.publishDidTransaction(payload).encodeABI();
+    // We're adding index to the nonce so we can keep on sending transactions to the blockchain one after another
+    // just by increasing the nonce
     let nonce: any = await web3.eth.getTransactionCount(walletAddress).then((n: any) => {
-        return n;
+        return n + index;
     });
     let gas = 1000000;
     try {
