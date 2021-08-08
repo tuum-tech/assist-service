@@ -12,6 +12,8 @@ const Web3 = require('web3');
 function publishDIDTx() {
     logging.info(NAMESPACE, 'Started cronjob: publishDIDTx');
 
+    let web3 = new Web3(config.blockchain.eidSidechain.rpcUrl);
+
     rpcService
         .getBlockHeight()
         .then((heightResponse) => {
@@ -19,11 +21,7 @@ function publishDIDTx() {
             return currentHeight;
         })
         .then((height) => {
-            console.log(`currentHeight: ${height}`);
-
-            let web3 = new Web3(config.blockchain.eidSidechain.rpcUrl);
-
-            EidSidechainState.find({ height })
+            let checkHeightDone = EidSidechainState.find({ height })
                 .exec()
                 .then((state) => {
                     if (state.length === 0) {
@@ -45,20 +43,24 @@ function publishDIDTx() {
                                 logging.error(NAMESPACE, 'Error while getting the latest block from the blockchain: ', err);
                             });
                     }
+                    return true;
                 })
                 .catch((err) => {
                     logging.error(NAMESPACE, 'Error while trying to retrieve latest state of the blockchain from the database: ', err);
+                    return false;
                 });
-
-            DidTx.find({ status: 'Pending' })
+            return checkHeightDone;
+        })
+        .then((checkHeightDone) => {
+            if (!checkHeightDone) {
+                return false;
+            }
+            let pendingTxDone = DidTx.find({ status: 'Pending' })
                 .exec()
                 .then((didTxes) => {
                     didTxes.map((didTx, index) => {
                         rpcService.sendTx(config.blockchain.eidSidechain.wallets.wallet1, JSON.stringify(didTx.didRequest), index).then((txDetails: any) => {
-                            console.log('txDetails: ', txDetails);
-
                             web3.eth.sendSignedTransaction(txDetails['rawTx']).on('transactionHash', (transactionHash: string) => {
-                                console.log('transactionHash:', transactionHash);
                                 didTx.status = 'Processing';
                                 didTx.blockchainTxHash = transactionHash;
                                 didTx.walletUsed = txDetails['walletUsed'];
@@ -66,12 +68,19 @@ function publishDIDTx() {
                             });
                         });
                     });
+                    return true;
                 })
                 .catch((err) => {
                     logging.error(NAMESPACE, 'Error while publishing the Pending DID transactions to the blockchain: ', err);
+                    return false;
                 });
-
-            DidTx.find({ status: 'Processing' })
+            return pendingTxDone;
+        })
+        .then((pendingTxDone) => {
+            if (!pendingTxDone) {
+                return false;
+            }
+            let processingTxDone = DidTx.find({ status: 'Processing' })
                 .exec()
                 .then((didTxes) => {
                     didTxes.map((didTx) => {
@@ -79,7 +88,6 @@ function publishDIDTx() {
                             if (!receipt) {
                                 return;
                             }
-                            console.log('receipt:', receipt);
                             didTx.blockchainTxReceipt = receipt;
                             if (receipt['status']) {
                                 didTx.status = 'Completed';
@@ -90,10 +98,13 @@ function publishDIDTx() {
                             didTx.save();
                         });
                     });
+                    return true;
                 })
                 .catch((err) => {
                     logging.error(NAMESPACE, 'Error while trying to process Processing DID transactions from the database: ', err);
+                    return false;
                 });
+            return processingTxDone;
         })
         .then(() => {
             logging.info(NAMESPACE, 'Completed cronjob: publishDIDTx');
