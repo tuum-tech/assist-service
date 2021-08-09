@@ -68,13 +68,14 @@ function publishDIDTx(network: string) {
             if (!checkHeightDone) {
                 return false;
             }
-            let pendingTxDone = conn.models.DidTx.find({ status: 'Pending' })
+            let pendingTxDone = conn.models.DidTx.find({ status: config.txStatus.pending })
                 .exec()
                 .then((didTxes) => {
                     didTxes.map((didTx, index) => {
-                        rpcService.signTx(network, config.blockchain.eidSidechain.wallets.wallet1, JSON.stringify(didTx.didRequest), index).then((txDetails: any) => {
+                        let wallet = config.blockchain.eidSidechain.wallets.addresses[Math.floor(Math.random() * config.blockchain.eidSidechain.wallets.addresses.length)];
+                        rpcService.signTx(network, wallet, JSON.stringify(didTx.didRequest), index).then((txDetails: any) => {
                             web3.eth.sendSignedTransaction(txDetails['rawTx']).on('transactionHash', (transactionHash: string) => {
-                                didTx.status = 'Processing';
+                                didTx.status = config.txStatus.processing;
                                 didTx.blockchainTxHash = transactionHash;
                                 didTx.walletUsed = txDetails['walletUsed'];
                                 didTx.save();
@@ -93,7 +94,7 @@ function publishDIDTx(network: string) {
             if (!pendingTxDone) {
                 return false;
             }
-            let processingTxDone = conn.models.DidTx.find({ status: 'Processing' })
+            let processingTxDone = conn.models.DidTx.find({ status: config.txStatus.processing })
                 .exec()
                 .then((didTxes) => {
                     didTxes.map((didTx) => {
@@ -103,9 +104,9 @@ function publishDIDTx(network: string) {
                             }
                             didTx.blockchainTxReceipt = receipt;
                             if (receipt['status']) {
-                                didTx.status = 'Completed';
+                                didTx.status = config.txStatus.completed;
                             } else {
-                                didTx.status = 'Cancelled';
+                                didTx.status = config.txStatus.cancelled;
                                 logging.error(NAMESPACE, 'Error while trying to publish DID transaction so changed its status to cancelled');
                             }
                             didTx.save();

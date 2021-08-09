@@ -71,7 +71,7 @@ async function signTx(network: string, wallet: any, payload: string, index: numb
     let web3 = new Web3(rpcUrl);
     let contract = new web3.eth.Contract(PUBLISH_CONTRACT_ABI, contractAddress);
 
-    const account = web3.eth.accounts.decrypt(wallet, config.blockchain.eidSidechain.wallets.walletPass);
+    const account = web3.eth.accounts.decrypt(wallet, config.blockchain.eidSidechain.wallets.pass);
     const walletAddress = web3.utils.toChecksumAddress(account['address']);
     const privateKey = account['privateKey'];
 

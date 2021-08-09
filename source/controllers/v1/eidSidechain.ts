@@ -33,8 +33,9 @@ const createDIDTx = (req: Request, res: Response, next: NextFunction) => {
     // TODO: Check if requestFrom DID is valid by resolving it
 
     // Verify whether the given payload is valid by trying to create a transaction out of it
+    let wallet = config.blockchain.eidSidechain.wallets.addresses[Math.floor(Math.random() * config.blockchain.eidSidechain.wallets.addresses.length)];
     rpcService
-        .signTx(network, config.blockchain.eidSidechain.wallets.wallet1, JSON.stringify(didRequest))
+        .signTx(network, wallet, JSON.stringify(didRequest))
         .then((txDetails: any) => {
             return txDetails;
         })
@@ -87,7 +88,7 @@ const createDIDTx = (req: Request, res: Response, next: NextFunction) => {
                 requestFrom: { username },
                 didRequest,
                 memo,
-                status: 'Pending'
+                status: config.txStatus.pending
             });
             didTx
                 .save()
