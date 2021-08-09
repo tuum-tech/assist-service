@@ -48,18 +48,17 @@ const createDIDTx = (req: Request, res: Response, next: NextFunction) => {
             }
             let user = users[0];
             let count: number = user.requests.premiumEndpoints.today;
-            if (count >= config.user.premiumEndpointsDailyLimit) {
+            if (count >= user.requests.premiumEndpoints.dailyLimit) {
                 let err = 'The user "' + user.username + '" has reached the daily API call limit of ' + config.user.premiumEndpointsDailyLimit;
                 logging.error(NAMESPACE, 'Error while trying to create a DID transaction: ', err);
 
-                // TODO Remove this comment when we have a cronjob that resets the daily limit
-                /* return res.status(401).json({
+                return res.status(401).json({
                     _status: 'ERR',
                     _error: {
                         code: 401,
                         message: err
                     }
-                }); */
+                });
             }
             const didTx = new DidTx({
                 _id: new mongoose.Types.ObjectId(),

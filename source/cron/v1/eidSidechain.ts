@@ -1,6 +1,8 @@
 import mongoose from 'mongoose';
+import cron from 'node-cron';
 import config from '../../config/config';
 import logging from '../../config/logging';
+import User from '../../models/user';
 import DidTx from '../../models/didTx';
 import LatestBlockchainState from '../../models/latestBlockchainState';
 import rpcService from '../../services/v1/eidSidechainRpc';
@@ -121,4 +123,31 @@ function publishDIDTx() {
         });
 }
 
-export default { publishDIDTx };
+function dailyCronjob() {
+    // TODO: Uncomment this when going to production
+    //cron.schedule('0 0 * * * *', () => {
+
+    cron.schedule('*/5 * * * * *', () => {
+        logging.info(NAMESPACE, 'Started cronjob: dailyCronjob');
+
+        let web3 = new Web3(config.blockchain.eidSidechain.rpcUrl);
+
+        User.find()
+            .select('-password')
+            .exec()
+            .then((users) => {
+                users.map((user) => {
+                    user.requests.freeEndpoints.today = 0;
+                    user.requests.premiumEndpoints.today = 0;
+                    user.save();
+                });
+            })
+            .catch((err) => {
+                logging.error(NAMESPACE, 'Error while trying to reset daily limit for the users: ', err);
+            });
+
+        logging.info(NAMESPACE, 'Completed cronjob: dailyCronjob');
+    });
+}
+
+export default { publishDIDTx, dailyCronjob };
