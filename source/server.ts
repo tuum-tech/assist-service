@@ -1,4 +1,3 @@
-import http from 'http';
 import cors from 'cors';
 import express from 'express';
 import logging from './config/logging';
@@ -76,5 +75,6 @@ router.use((req, res, next) => {
 router.listen(config.server.port, () => {
     logging.info(NAMESPACE, `Assist Service is running on ${config.server.hostname}:${config.server.port}`);
 
+    cronEIDSidechain.dailyCronjob();
     cronEIDSidechain.publishDIDTx();
 });
