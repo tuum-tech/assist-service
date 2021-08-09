@@ -1,4 +1,5 @@
 {
+    "network": "mainnet",
     "didRequest": {
         "header": {
             "specification": "elastos/did/1.0",

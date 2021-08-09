@@ -5,8 +5,9 @@ const NAMESPACE = 'Service: EID Sidechain';
 
 const Web3 = require('web3');
 
-async function getBlockHeight() {
-    const web3 = new Web3(config.blockchain.eidSidechain.rpcUrl);
+async function getBlockHeight(network: string) {
+    const rpcUrl = network === config.blockchain.mainnet ? config.blockchain.eidSidechain.mainnet.rpcUrl : config.blockchain.eidSidechain.testnet.rpcUrl;
+    let web3 = new Web3(rpcUrl);
     const res: any = await web3.eth
         .getBlockNumber()
         .then((height: any) => {
@@ -39,7 +40,11 @@ async function getBlockHeight() {
     return res;
 }
 
-async function sendTx(wallet: any, payload: string, index: number) {
+async function signTx(network: string, wallet: any, payload: string, index: number = 0) {
+    const rpcUrl = network === config.blockchain.mainnet ? config.blockchain.eidSidechain.mainnet.rpcUrl : config.blockchain.eidSidechain.testnet.rpcUrl;
+    const contractAddress = network === config.blockchain.mainnet ? config.blockchain.eidSidechain.mainnet.contractAddress : config.blockchain.eidSidechain.testnet.contractAddress;
+    const chainId = network === config.blockchain.mainnet ? config.blockchain.eidSidechain.mainnet.chainId : config.blockchain.eidSidechain.testnet.chainId;
+
     const PUBLISH_CONTRACT_ABI = [
         {
             inputs: [],
@@ -63,8 +68,8 @@ async function sendTx(wallet: any, payload: string, index: number) {
         }
     ];
 
-    let web3 = new Web3(config.blockchain.eidSidechain.rpcUrl);
-    let contract = new web3.eth.Contract(PUBLISH_CONTRACT_ABI, config.blockchain.eidSidechain.contractAddress);
+    let web3 = new Web3(rpcUrl);
+    let contract = new web3.eth.Contract(PUBLISH_CONTRACT_ABI, contractAddress);
 
     const account = web3.eth.accounts.decrypt(wallet, config.blockchain.eidSidechain.wallets.walletPass);
     const walletAddress = web3.utils.toChecksumAddress(account['address']);
@@ -88,7 +93,7 @@ async function sendTx(wallet: any, payload: string, index: number) {
     }
     let gasPrice = await web3.eth.getGasPrice();
 
-    let to = web3.utils.toChecksumAddress(config.blockchain.eidSidechain.contractAddress);
+    let to = web3.utils.toChecksumAddress(contractAddress);
 
     const tx = {
         nonce,
@@ -96,7 +101,7 @@ async function sendTx(wallet: any, payload: string, index: number) {
         gas,
         gasPrice,
         data,
-        chainId: config.blockchain.eidSidechain.chainId
+        chainId
     };
 
     let signedTx: any = await web3.eth.accounts.signTransaction(tx, privateKey).then((result: any) => {
@@ -111,4 +116,4 @@ async function sendTx(wallet: any, payload: string, index: number) {
     return txDetails;
 }
 
-export default { getBlockHeight, sendTx };
+export default { getBlockHeight, signTx };

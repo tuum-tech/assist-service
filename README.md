@@ -219,7 +219,7 @@ Request type: POST
 Url: /v1/eidSidechain/create/didTx
 Authorization: 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9'
 Content-Type: 'application/json'
-Data: { 'didRequest': {} }
+Data: { 'network': 'mainnet|testnet', 'didRequest': {} }
 Return:
     Success:
     {

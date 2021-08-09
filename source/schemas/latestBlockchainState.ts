@@ -1,5 +1,4 @@
 import mongoose, { Schema } from 'mongoose';
-import ILatestBlockchainState from '../interfaces/latestBlockchainState';
 
 const LatestBlockchainStateSchema: Schema = new Schema(
     {
@@ -25,4 +24,4 @@ const LatestBlockchainStateSchema: Schema = new Schema(
     }
 );
 
-export default mongoose.model<ILatestBlockchainState>('LatestBlockchainState', LatestBlockchainStateSchema);
+export default LatestBlockchainStateSchema;

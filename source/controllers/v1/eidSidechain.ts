@@ -3,8 +3,9 @@ import { Base64 } from 'js-base64';
 import mongoose from 'mongoose';
 import config from '../../config/config';
 import logging from '../../config/logging';
-import DidTx from '../../models/didTx';
-import User from '../../models/user';
+import connMainnet from '../../connections/mainnet';
+import connTestnet from '../../connections/testnet';
+import rpcService from '../../services/v1/eidSidechainRpc';
 
 const NAMESPACE = 'Controller: EID Sidechain';
 
@@ -12,7 +13,7 @@ const createDIDTx = (req: Request, res: Response, next: NextFunction) => {
     const authTokenDecoded = res.locals.jwt || { username: config.user.defaultUsername };
     const username = authTokenDecoded['username'];
 
-    let { didRequest, memo } = req.body;
+    let { network, didRequest, memo } = req.body;
     let did: any = null;
     try {
         let didRequestPayload = didRequest['payload'];
@@ -31,10 +32,30 @@ const createDIDTx = (req: Request, res: Response, next: NextFunction) => {
 
     // TODO: Check if requestFrom DID is valid by resolving it
 
-    // TODO: Verify whether the given payload is valid by trying to create a transaction out of it
+    // Verify whether the given payload is valid by trying to create a transaction out of it
+    rpcService
+        .signTx(network, config.blockchain.eidSidechain.wallets.wallet1, JSON.stringify(didRequest))
+        .then((txDetails: any) => {
+            return txDetails;
+        })
+        .then((txDetails) => {
+            if (!txDetails.hasOwnProperty('rawTx')) {
+                let err = 'Error while trying to sign the transaction';
+                logging.error(NAMESPACE, err);
 
-    // Check the number of requests made by the caller DID
-    User.find({ username })
+                return res.status(500).json({
+                    _status: 'ERR',
+                    _error: {
+                        code: 500,
+                        message: err
+                    }
+                });
+            }
+        });
+
+    const conn = network === config.blockchain.testnet ? connTestnet : connMainnet;
+
+    conn.models.User.find({ username })
         .exec()
         .then((users) => {
             if (users.length !== 1) {
@@ -60,7 +81,7 @@ const createDIDTx = (req: Request, res: Response, next: NextFunction) => {
                     }
                 });
             }
-            const didTx = new DidTx({
+            const didTx = new conn.models.DidTx({
                 _id: new mongoose.Types.ObjectId(),
                 did,
                 requestFrom: { username },
@@ -70,7 +91,7 @@ const createDIDTx = (req: Request, res: Response, next: NextFunction) => {
             });
             didTx
                 .save()
-                .then((result) => {
+                .then((result: any) => {
                     const _result = JSON.parse(JSON.stringify(result));
                     _result['confirmation_id'] = _result['_id'];
                     user.requests.premiumEndpoints.today += 1;
@@ -81,7 +102,7 @@ const createDIDTx = (req: Request, res: Response, next: NextFunction) => {
                         didTx: _result
                     });
                 })
-                .catch((err) => {
+                .catch((err: any) => {
                     logging.error(NAMESPACE, 'Error while trying to save the DID tx to the database: ', err);
 
                     return res.status(500).json({
@@ -107,14 +128,30 @@ const createDIDTx = (req: Request, res: Response, next: NextFunction) => {
 };
 
 const getAllDIDTxes = (req: Request, res: Response, next: NextFunction) => {
-    DidTx.find()
+    const network = req.query.network;
+    const conn = network === config.blockchain.testnet ? connTestnet : connMainnet;
+
+    conn.models.DidTx.find()
         .exec()
         .then((results) => {
-            return res.status(200).json({
-                _status: 'OK',
-                didTxes: results,
-                count: results.length
-            });
+            if (results.length === 0) {
+                let err: string = 'Error while trying to get DID transactions';
+                logging.error(NAMESPACE, err);
+
+                return res.status(404).json({
+                    _status: 'ERR',
+                    _error: {
+                        code: 404,
+                        message: err
+                    }
+                });
+            } else {
+                return res.status(200).json({
+                    _status: 'OK',
+                    didTxes: results,
+                    count: results.length
+                });
+            }
         })
         .catch((err) => {
             logging.error(NAMESPACE, 'Error while trying to get all the DID transactions: ', err);
@@ -131,14 +168,29 @@ const getAllDIDTxes = (req: Request, res: Response, next: NextFunction) => {
 
 const getDIDTxFromConfirmationId = (req: Request, res: Response, next: NextFunction) => {
     const _id = req.params.confirmation_id;
+    const network = req.query.network;
+    const conn = network === config.blockchain.testnet ? connTestnet : connMainnet;
 
-    DidTx.findOne({ _id })
+    conn.models.DidTx.findOne({ _id })
         .exec()
         .then((didTx) => {
-            return res.status(200).json({
-                _status: 'OK',
-                didTx
-            });
+            if (!didTx) {
+                let err: string = 'Error while trying to get a DID transaction from confirmation_id';
+                logging.error(NAMESPACE, err);
+
+                return res.status(404).json({
+                    _status: 'ERR',
+                    _error: {
+                        code: 404,
+                        message: err
+                    }
+                });
+            } else {
+                return res.status(200).json({
+                    _status: 'OK',
+                    didTx
+                });
+            }
         })
         .catch((err) => {
             logging.error(NAMESPACE, 'Error while trying to get a DID transaction from confirmation_id: ', err);

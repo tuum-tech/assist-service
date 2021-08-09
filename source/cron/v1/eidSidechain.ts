@@ -2,41 +2,45 @@ import mongoose from 'mongoose';
 import cron from 'node-cron';
 import config from '../../config/config';
 import logging from '../../config/logging';
-import User from '../../models/user';
-import DidTx from '../../models/didTx';
-import LatestBlockchainState from '../../models/latestBlockchainState';
 import rpcService from '../../services/v1/eidSidechainRpc';
+import connMainnet from '../../connections/mainnet';
+import connTestnet from '../../connections/testnet';
 import sendNotification from '../../functions/sendNotification';
 
 const NAMESPACE = 'Cron: EID Sidechain';
 
 const Web3 = require('web3');
 
-function publishDIDTx() {
-    logging.info(NAMESPACE, 'Started cronjob: publishDIDTx');
+function publishDIDTx(network: string) {
+    logging.info(NAMESPACE, `Started cronjob: publishDIDTx: ${network}`);
 
-    let web3 = new Web3(config.blockchain.eidSidechain.rpcUrl);
+    const rpcUrl = network === config.blockchain.testnet ? config.blockchain.eidSidechain.testnet.rpcUrl : config.blockchain.eidSidechain.mainnet.rpcUrl;
+    const contractAddress = network === config.blockchain.testnet ? config.blockchain.eidSidechain.testnet.contractAddress : config.blockchain.eidSidechain.mainnet.contractAddress;
+    const chainId = network === config.blockchain.testnet ? config.blockchain.eidSidechain.testnet.chainId : config.blockchain.eidSidechain.mainnet.chainId;
+    let web3 = new Web3(rpcUrl);
+
+    const conn = network === config.blockchain.testnet ? connTestnet : connMainnet;
 
     rpcService
-        .getBlockHeight()
+        .getBlockHeight(network)
         .then((heightResponse) => {
             let currentHeight: number = heightResponse.height - 1;
             return currentHeight;
         })
         .then((height) => {
-            let checkHeightDone = LatestBlockchainState.findOne({ chain: config.blockchain.eidSidechain.name })
+            let checkHeightDone = conn.models.LatestBlockchainState.findOne({ chain: config.blockchain.eidSidechain.name })
                 .exec()
                 .then((state) => {
                     let latestState =
                         state ||
-                        new LatestBlockchainState({
+                        new conn.models.LatestBlockchainState({
                             _id: new mongoose.Types.ObjectId(),
                             chain: config.blockchain.eidSidechain.name,
-                            network: 'mainnet',
+                            network,
                             extraInfo: {
-                                rpcUrl: config.blockchain.eidSidechain.rpcUrl,
-                                contractAddress: config.blockchain.eidSidechain.contractAddress,
-                                chainId: config.blockchain.eidSidechain.chainId
+                                rpcUrl,
+                                contractAddress,
+                                chainId
                             }
                         });
                     web3.eth
@@ -64,11 +68,11 @@ function publishDIDTx() {
             if (!checkHeightDone) {
                 return false;
             }
-            let pendingTxDone = DidTx.find({ status: 'Pending' })
+            let pendingTxDone = conn.models.DidTx.find({ status: 'Pending' })
                 .exec()
                 .then((didTxes) => {
                     didTxes.map((didTx, index) => {
-                        rpcService.sendTx(config.blockchain.eidSidechain.wallets.wallet1, JSON.stringify(didTx.didRequest), index).then((txDetails: any) => {
+                        rpcService.signTx(network, config.blockchain.eidSidechain.wallets.wallet1, JSON.stringify(didTx.didRequest), index).then((txDetails: any) => {
                             web3.eth.sendSignedTransaction(txDetails['rawTx']).on('transactionHash', (transactionHash: string) => {
                                 didTx.status = 'Processing';
                                 didTx.blockchainTxHash = transactionHash;
@@ -89,7 +93,7 @@ function publishDIDTx() {
             if (!pendingTxDone) {
                 return false;
             }
-            let processingTxDone = DidTx.find({ status: 'Processing' })
+            let processingTxDone = conn.models.DidTx.find({ status: 'Processing' })
                 .exec()
                 .then((didTxes) => {
                     didTxes.map((didTx) => {
@@ -116,24 +120,26 @@ function publishDIDTx() {
             return processingTxDone;
         })
         .then(() => {
-            logging.info(NAMESPACE, 'Completed cronjob: publishDIDTx');
-            setTimeout(publishDIDTx, 5000);
+            logging.info(NAMESPACE, `Completed cronjob: publishDIDTx: ${network}`);
+            setTimeout(() => {
+                publishDIDTx(network);
+            }, 10000);
         })
         .catch((err) => {
             logging.error(NAMESPACE, 'Error while trying to run the cronjob to publish DID txes: ', err);
         });
 }
 
-function dailyCronjob() {
+function dailyCronjob(network: string) {
     // TODO: Uncomment this when going to production
     //cron.schedule('0 0 * * * *', () => {
 
     cron.schedule('*/5 * * * * *', () => {
-        logging.info(NAMESPACE, 'Started cronjob: dailyCronjob');
+        logging.info(NAMESPACE, `Started cronjob: dailyCronjob: ${network}`);
 
-        let web3 = new Web3(config.blockchain.eidSidechain.rpcUrl);
+        const conn = network === config.blockchain.testnet ? connTestnet : connMainnet;
 
-        User.find()
+        conn.models.User.find()
             .select('-password')
             .exec()
             .then((users) => {
@@ -147,7 +153,7 @@ function dailyCronjob() {
                 logging.error(NAMESPACE, 'Error while trying to reset daily limit for the users: ', err);
             });
 
-        logging.info(NAMESPACE, 'Completed cronjob: dailyCronjob');
+        logging.info(NAMESPACE, `Completed cronjob: dailyCronjob: ${network}`);
     });
 }
 

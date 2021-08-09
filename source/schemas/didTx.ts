@@ -1,5 +1,4 @@
 import mongoose, { Schema } from 'mongoose';
-import IDidTx from '../interfaces/didTx';
 
 const DidTxSchema: Schema = new Schema(
     {
@@ -24,4 +23,4 @@ const DidTxSchema: Schema = new Schema(
     this.extraInfo = { a: 'b' };
 }); */
 
-export default mongoose.model<IDidTx>('DidTx', DidTxSchema);
+export default DidTxSchema;

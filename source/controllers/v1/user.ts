@@ -3,7 +3,8 @@ import mongoose from 'mongoose';
 import bcryptjs from 'bcryptjs';
 import config from '../../config/config';
 import logging from '../../config/logging';
-import User from '../../models/user';
+import connMainnet from '../../connections/mainnet';
+import connTestnet from '../../connections/testnet';
 import signJWT from '../../functions/signJTW';
 
 const NAMESPACE = 'Controller: User';
@@ -18,7 +19,7 @@ const validateToken = (req: Request, res: Response, next: NextFunction) => {
 };
 
 const register = (req: Request, res: Response, next: NextFunction) => {
-    let { username, password } = req.body;
+    let { network, username, password } = req.body;
 
     bcryptjs.hash(password, 10, (hashError, hash) => {
         if (hashError) {
@@ -31,64 +32,79 @@ const register = (req: Request, res: Response, next: NextFunction) => {
             });
         }
 
-        const _user = new User({
-            _id: new mongoose.Types.ObjectId(),
-            username,
-            password: hash,
-            accountType: config.user.freeAcountType,
-            requests: {
-                freeEndpoints: {
-                    today: 0,
-                    all: 0,
-                    dailyLimit: config.user.freeEndpointsDailyLimit
-                },
-                premiumEndpoints: {
-                    today: 0,
-                    all: 0,
-                    dailyLimit: config.user.premiumEndpointsDailyLimit
+        const conn = network === config.blockchain.testnet ? connTestnet : connMainnet;
+
+        // Usernames should be unique
+        conn.models.User.find({ username })
+            .exec()
+            .then((users: any) => {
+                if (users.length >= 1) {
+                    return true;
+                } else {
+                    return false;
                 }
-            }
-        });
-
-        return _user
-            .save()
-            .then((user) => {
-                return res.status(201).json({
-                    _status: 'OK',
-                    user
-                });
             })
-            .catch((err) => {
-                logging.error(NAMESPACE, 'Error while trying to register a new user: ', err);
+            .then((userExists: boolean) => {
+                if (userExists) {
+                    return res.status(401).json({
+                        _status: 'ERR',
+                        _error: {
+                            code: 401,
+                            message: `There already exists another user with the same username "${username}". Please choose a different username.`
+                        }
+                    });
+                } else {
+                    let _user = new conn.models.User({
+                        _id: new mongoose.Types.ObjectId(),
+                        username,
+                        password: hash,
+                        accountType: config.user.freeAcountType,
+                        requests: {
+                            freeEndpoints: {
+                                today: 0,
+                                all: 0,
+                                dailyLimit: config.user.freeEndpointsDailyLimit
+                            },
+                            premiumEndpoints: {
+                                today: 0,
+                                all: 0,
+                                dailyLimit: network === config.blockchain.testnet ? config.user.freeEndpointsDailyLimit : config.user.premiumEndpointsDailyLimit
+                            }
+                        }
+                    });
 
-                return res.status(500).json({
-                    _status: 'ERR',
-                    _error: {
-                        code: 500,
-                        message: err
-                    }
-                });
+                    return _user
+                        .save()
+                        .then((user: any) => {
+                            return res.status(201).json({
+                                _status: 'OK',
+                                user
+                            });
+                        })
+                        .catch((err: any) => {
+                            logging.error(NAMESPACE, 'Error while trying to register a new user: ', err);
+
+                            return res.status(500).json({
+                                _status: 'ERR',
+                                _error: {
+                                    code: 500,
+                                    message: err
+                                }
+                            });
+                        });
+                }
             });
     });
 };
 
 const login = (req: Request, res: Response, next: NextFunction) => {
-    let { username, password } = req.body;
+    let { network, username, password } = req.body;
 
-    User.find({ username })
+    const conn = network === config.blockchain.testnet ? connTestnet : connMainnet;
+    conn.models.User.findOne({ username })
         .exec()
-        .then((users) => {
-            if (users.length !== 1) {
-                return res.status(401).json({
-                    _status: 'ERR',
-                    _error: {
-                        code: 401,
-                        message: 'Unauthorized'
-                    }
-                });
-            }
-
-            bcryptjs.compare(password, users[0].password, (error, result) => {
+        .then((user) => {
+            bcryptjs.compare(password, user.password, (error, result) => {
                 if (error) {
                     logging.error(NAMESPACE, error.message, error);
 
@@ -100,7 +116,7 @@ const login = (req: Request, res: Response, next: NextFunction) => {
                         }
                     });
                 } else if (result) {
-                    signJWT(users[0], (_error, token) => {
+                    signJWT(user, (_error, token) => {
                         if (_error) {
                             logging.error(NAMESPACE, 'Unable to sign token: ', _error);
 
@@ -113,7 +129,7 @@ const login = (req: Request, res: Response, next: NextFunction) => {
                             });
                         } else if (token) {
                             // We don't want to show the password during login
-                            const _user = JSON.parse(JSON.stringify(users[0]));
+                            const _user = JSON.parse(JSON.stringify(user));
                             delete _user['password'];
                             return res.status(200).json({
                                 _status: 'OK',
@@ -140,7 +156,10 @@ const login = (req: Request, res: Response, next: NextFunction) => {
 };
 
 const getAllUsers = (req: Request, res: Response, next: NextFunction) => {
-    User.find()
+    const network = req.query.network;
+    const conn = network === config.blockchain.testnet ? connTestnet : connMainnet;
+
+    conn.models.User.find()
         .select('-password')
         .exec()
         .then((users) => {

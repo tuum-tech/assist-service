@@ -22,7 +22,7 @@ const MONGO_OPTIONS = {
     useNewUrlParser: true,
     socketTimeoutMS: 30000,
     keepAlive: true,
-    poolSize: 50,
+    poolSize: 25,
     autoIndex: false,
     retryWrites: SERVER.production === true ? true : false,
     authSource: 'admin',
@@ -31,14 +31,17 @@ const MONGO_OPTIONS = {
 
 const MONGO_USERNAME = process.env.MONGO_USERNAME || 'mongoadmin';
 const MONGO_PASSWORD = process.env.MONGO_PASSWORD || 'mongopass';
-const MONGO_HOST = `${process.env.MONGO_HOST}:${process.env.MONGO_PORT}/${process.env.MONGO_DATABASE}` || 'localhost:37018/assistdb';
+const MONGO_HOST_MAINNET = `${process.env.MONGO_HOST}:${process.env.MONGO_PORT}/assistdb` || 'localhost:37018/assistdb';
+const MONGO_HOST_TESTNET = `${process.env.MONGO_HOST}:${process.env.MONGO_PORT}/assistdb-testnet` || 'localhost:37018/assistdb-testnet';
 
 const MONGO = {
-    host: MONGO_HOST,
-    username: MONGO_USERNAME,
-    password: MONGO_PASSWORD,
     options: MONGO_OPTIONS,
-    url: SERVER.production === true ? `mongodb+srv://${MONGO_USERNAME}:${MONGO_PASSWORD}@${MONGO_HOST}` : `mongodb://${MONGO_USERNAME}:${MONGO_PASSWORD}@${MONGO_HOST}`
+    mainnet: {
+        url: SERVER.production === true ? `mongodb+srv://${MONGO_USERNAME}:${MONGO_PASSWORD}@${MONGO_HOST_MAINNET}` : `mongodb://${MONGO_USERNAME}:${MONGO_PASSWORD}@${MONGO_HOST_MAINNET}`
+    },
+    testnet: {
+        url: SERVER.production === true ? `mongodb+srv://${MONGO_USERNAME}:${MONGO_PASSWORD}@${MONGO_HOST_TESTNET}` : `mongodb://${MONGO_USERNAME}:${MONGO_PASSWORD}@${MONGO_HOST_TESTNET}`
+    }
 };
 
 const USER = {
@@ -60,18 +63,23 @@ const EID_SIDECHAIN_WALLETS = {
 };
 const EID_SIDECHAIN = {
     name: 'eidSidechain',
-    rpcUrl: process.env.EID_SIDECHAIN_RPC_URL_ETH || 'https://api.elastos.io/eid',
-    contractAddress: process.env.EID_CONTRACT_ADDRESS || '0x46E5936a9bAA167b3368F4197eDce746A66f7a7a',
-    chainId: Number(process.env.EID_CHAIN_ID) || '22',
+    mainnet: {
+        rpcUrl: 'https://api.elastos.io/eid',
+        contractAddress: '0x46E5936a9bAA167b3368F4197eDce746A66f7a7a',
+        chainId: 22
+    },
+    testnet: {
+        rpcUrl: 'https://api-testnet.elastos.io/eid',
+        contractAddress: '0xF654c3cBBB60D7F4ac7cDA325d51E62f47ACD436',
+        chainId: 23
+    },
     wallets: EID_SIDECHAIN_WALLETS
 };
 const BLOCKCHAIN = {
-    network: process.env.NETWORK || 'mainnet',
+    mainnet: 'mainnet',
+    testnet: 'testnet',
+    tuumnet: 'tuumnet',
     eidSidechain: EID_SIDECHAIN
-};
-
-const CRON = {
-    interval: Number(process.env.CRON_INTERVAL) || 8
 };
 
 const SMTP_CREDS = {
@@ -88,7 +96,6 @@ const config = {
     user: USER,
     mongo: MONGO,
     blockchain: BLOCKCHAIN,
-    cron: CRON,
     smtpCreds: SMTP_CREDS
 };
 

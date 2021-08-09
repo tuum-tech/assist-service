@@ -1,8 +1,8 @@
 import cors from 'cors';
 import express from 'express';
+import mongoose from 'mongoose';
 import logging from './config/logging';
 import config from './config/config';
-import mongoose from 'mongoose';
 import cronEIDSidechain from './cron/v1/eidSidechain';
 import healthCheckRoutes from './routes/v1/healthCheck';
 import authRoutes from './routes/v1/user';
@@ -10,16 +10,6 @@ import eidSidechainRoutes from './routes/v1/eidSidechain';
 
 const NAMESPACE = 'Server';
 const router = express();
-
-/** Connect to Mongo */
-mongoose
-    .connect(config.mongo.url, config.mongo.options)
-    .then((result) => {
-        logging.info(NAMESPACE, 'Mongo Connected');
-    })
-    .catch((error) => {
-        logging.error(NAMESPACE, error.message, error);
-    });
 
 /** Log the request */
 router.use((req, res, next) => {
@@ -75,6 +65,8 @@ router.use((req, res, next) => {
 router.listen(config.server.port, () => {
     logging.info(NAMESPACE, `Assist Service is running on ${config.server.hostname}:${config.server.port}`);
 
-    cronEIDSidechain.dailyCronjob();
-    cronEIDSidechain.publishDIDTx();
+    cronEIDSidechain.dailyCronjob(config.blockchain.mainnet);
+    cronEIDSidechain.dailyCronjob(config.blockchain.testnet);
+    cronEIDSidechain.publishDIDTx(config.blockchain.mainnet);
+    cronEIDSidechain.publishDIDTx(config.blockchain.testnet);
 });

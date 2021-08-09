@@ -1,5 +1,4 @@
-import mongoose, { Schema } from 'mongoose';
-import IUser from '../interfaces/user';
+import { Schema } from 'mongoose';
 
 const UserSchema: Schema = new Schema(
     {
@@ -24,4 +23,4 @@ const UserSchema: Schema = new Schema(
     }
 );
 
-export default mongoose.model<IUser>('User', UserSchema);
+export default UserSchema;
