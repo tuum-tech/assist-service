@@ -59,9 +59,10 @@ const EID_SIDECHAIN_WALLETS = {
     wallet4: JSON.parse(process.env.EID_WALLET4 || DEFAULT_WALLET)
 };
 const EID_SIDECHAIN = {
+    name: 'eidSidechain',
     rpcUrl: process.env.EID_SIDECHAIN_RPC_URL_ETH || 'https://api.elastos.io/eid',
     contractAddress: process.env.EID_CONTRACT_ADDRESS || '0x46E5936a9bAA167b3368F4197eDce746A66f7a7a',
-    chainId: process.env.EID_CHAIN_ID || 22,
+    chainId: process.env.EID_CHAIN_ID || '22',
     wallets: EID_SIDECHAIN_WALLETS
 };
 const BLOCKCHAIN = {

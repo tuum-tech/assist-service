@@ -10,10 +10,13 @@ interface IValidator {
     ip: string;
 }
 
-export default interface IEidSidechainState extends Document {
+export default interface ILatestBlockchainState extends Document {
+    chain: string;
     network: string;
     height: number;
+    miner: string;
     validator: IValidator;
     numTx: number;
     block: object;
+    extraInfo: object;
 }

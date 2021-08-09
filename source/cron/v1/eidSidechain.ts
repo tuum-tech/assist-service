@@ -2,7 +2,7 @@ import mongoose from 'mongoose';
 import config from '../../config/config';
 import logging from '../../config/logging';
 import DidTx from '../../models/didTx';
-import EidSidechainState from '../../models/eidSidechainState';
+import LatestBlockchainState from '../../models/latestBlockchainState';
 import rpcService from '../../services/v1/eidSidechainRpc';
 
 const NAMESPACE = 'Cron: EID Sidechain';
@@ -21,28 +21,34 @@ function publishDIDTx() {
             return currentHeight;
         })
         .then((height) => {
-            let checkHeightDone = EidSidechainState.find({ height })
+            let checkHeightDone = LatestBlockchainState.findOne({ chain: config.blockchain.eidSidechain.name })
                 .exec()
                 .then((state) => {
-                    if (state.length === 0) {
-                        web3.eth
-                            .getBlock(height)
-                            .then((block: any) => {
-                                return block;
-                            })
-                            .then((block: any) => {
-                                const s = new EidSidechainState({
-                                    _id: new mongoose.Types.ObjectId(),
-                                    network: 'mainnet',
-                                    height,
-                                    block
-                                });
-                                s.save();
-                            })
-                            .catch((err: any) => {
-                                logging.error(NAMESPACE, 'Error while getting the latest block from the blockchain: ', err);
-                            });
-                    }
+                    let latestState =
+                        state ||
+                        new LatestBlockchainState({
+                            _id: new mongoose.Types.ObjectId(),
+                            chain: config.blockchain.eidSidechain.name,
+                            network: 'mainnet',
+                            extraInfo: {
+                                rpcUrl: config.blockchain.eidSidechain.rpcUrl,
+                                contractAddress: config.blockchain.eidSidechain.contractAddress,
+                                chainId: config.blockchain.eidSidechain.chainId
+                            }
+                        });
+                    web3.eth
+                        .getBlock(height)
+                        .then((block: any) => {
+                            return block;
+                        })
+                        .then((block: any) => {
+                            latestState.height = height;
+                            latestState.block = block;
+                            latestState.save();
+                        })
+                        .catch((err: any) => {
+                            logging.error(NAMESPACE, 'Error while getting the latest block from the blockchain: ', err);
+                        });
                     return true;
                 })
                 .catch((err) => {
