@@ -12,8 +12,11 @@ const NAMESPACE = 'Controller: User';
 const validateToken = (req: Request, res: Response, next: NextFunction) => {
     logging.info(NAMESPACE, 'Token validated, user authorized.');
 
+    const network = req.query.network ? req.query.network : config.blockchain.mainnet;
+
     return res.status(200).json({
         _status: 'OK',
+        network,
         message: 'Token validated'
     });
 };
@@ -21,10 +24,13 @@ const validateToken = (req: Request, res: Response, next: NextFunction) => {
 const register = (req: Request, res: Response, next: NextFunction) => {
     let { network, username, password } = req.body;
 
+    network = network ? network : config.blockchain.mainnet;
+
     bcryptjs.hash(password, 10, (hashError, hash) => {
         if (hashError) {
             return res.status(401).json({
                 _status: 'ERR',
+                network,
                 _error: {
                     code: 401,
                     message: hashError
@@ -48,6 +54,7 @@ const register = (req: Request, res: Response, next: NextFunction) => {
                 if (userExists) {
                     return res.status(401).json({
                         _status: 'ERR',
+                        network,
                         _error: {
                             code: 401,
                             message: `There already exists another user with the same username "${username}". Please choose a different username.`
@@ -78,6 +85,7 @@ const register = (req: Request, res: Response, next: NextFunction) => {
                         .then((user: any) => {
                             return res.status(201).json({
                                 _status: 'OK',
+                                network,
                                 user
                             });
                         })
@@ -86,6 +94,7 @@ const register = (req: Request, res: Response, next: NextFunction) => {
 
                             return res.status(500).json({
                                 _status: 'ERR',
+                                network,
                                 _error: {
                                     code: 500,
                                     message: err
@@ -100,6 +109,8 @@ const register = (req: Request, res: Response, next: NextFunction) => {
 const login = (req: Request, res: Response, next: NextFunction) => {
     let { network, username, password } = req.body;
 
+    network = network ? network : config.blockchain.mainnet;
+
     const conn = network === config.blockchain.testnet ? connTestnet : connMainnet;
     conn.models.User.findOne({ username })
         .exec()
@@ -110,6 +121,7 @@ const login = (req: Request, res: Response, next: NextFunction) => {
 
                     return res.status(401).json({
                         _status: 'ERR',
+                        network,
                         _error: {
                             code: 401,
                             message: 'Password Mismatch'
@@ -122,6 +134,7 @@ const login = (req: Request, res: Response, next: NextFunction) => {
 
                             return res.status(500).json({
                                 _status: 'ERR',
+                                network,
                                 _error: {
                                     code: 500,
                                     message: _error
@@ -133,6 +146,7 @@ const login = (req: Request, res: Response, next: NextFunction) => {
                             delete _user['password'];
                             return res.status(200).json({
                                 _status: 'OK',
+                                network,
                                 message: 'Auth successful',
                                 token: token,
                                 user: _user
@@ -147,6 +161,7 @@ const login = (req: Request, res: Response, next: NextFunction) => {
 
             return res.status(500).json({
                 _status: 'ERR',
+                network,
                 _error: {
                     code: 500,
                     message: err
@@ -156,7 +171,7 @@ const login = (req: Request, res: Response, next: NextFunction) => {
 };
 
 const getAllUsers = (req: Request, res: Response, next: NextFunction) => {
-    const network = req.query.network;
+    const network = req.query.network ? req.query.network : config.blockchain.mainnet;
     const conn = network === config.blockchain.testnet ? connTestnet : connMainnet;
 
     conn.models.User.find()
@@ -165,6 +180,7 @@ const getAllUsers = (req: Request, res: Response, next: NextFunction) => {
         .then((users) => {
             return res.status(200).json({
                 _status: 'OK',
+                network,
                 users,
                 count: users.length
             });
@@ -174,6 +190,7 @@ const getAllUsers = (req: Request, res: Response, next: NextFunction) => {
 
             return res.status(500).json({
                 _status: 'ERR',
+                network,
                 _error: {
                     code: 500,
                     message: err

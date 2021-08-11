@@ -8,6 +8,12 @@ const NAMESPACE = 'Middleware: User Auth';
 const extractJWT = (req: Request, res: Response, next: NextFunction) => {
     logging.info(NAMESPACE, 'Validating token');
 
+    let _network = req.query.network;
+    if (!_network) {
+        let { network } = req.body;
+        _network = network ? network : config.blockchain.mainnet;
+    }
+
     let token = req.headers.authorization?.split(' ')[1];
 
     if (token) {
@@ -15,6 +21,7 @@ const extractJWT = (req: Request, res: Response, next: NextFunction) => {
             if (error) {
                 return res.status(404).json({
                     _status: 'ERR',
+                    network: _network,
                     _error: {
                         code: 404,
                         message: error

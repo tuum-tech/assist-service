@@ -72,15 +72,36 @@ function publishDIDTx(network: string) {
                 .exec()
                 .then((didTxes) => {
                     didTxes.map((didTx, index) => {
-                        let wallet = config.blockchain.eidSidechain.wallets.addresses[Math.floor(Math.random() * config.blockchain.eidSidechain.wallets.addresses.length)];
-                        rpcService.signTx(network, wallet, JSON.stringify(didTx.didRequest), index).then((txDetails: any) => {
-                            web3.eth.sendSignedTransaction(txDetails['rawTx']).on('transactionHash', (transactionHash: string) => {
-                                didTx.status = config.txStatus.processing;
-                                didTx.blockchainTxHash = transactionHash;
-                                didTx.walletUsed = txDetails['walletUsed'];
+                        let wallet = config.blockchain.eidSidechain.wallets.keystores[Math.floor(Math.random() * config.blockchain.eidSidechain.wallets.keystores.length)];
+                        rpcService
+                            .signTx(network, wallet, JSON.stringify(didTx.didRequest), index)
+                            .then((res) => {
+                                if (res.error) {
+                                    logging.error(NAMESPACE, 'Error while publishing the a pending DID transaction to the blockchain: ', res.error);
+
+                                    didTx.status = config.txStatus.cancelled;
+                                    didTx.extraInfo = {
+                                        error: res.error
+                                    };
+                                    didTx.save();
+                                } else {
+                                    web3.eth.sendSignedTransaction(res.txDetails['rawTx']).on('transactionHash', (transactionHash: string) => {
+                                        didTx.status = config.txStatus.processing;
+                                        didTx.blockchainTxHash = transactionHash;
+                                        didTx.walletUsed = res.txDetails['walletUsed'];
+                                        didTx.save();
+                                    });
+                                }
+                            })
+                            .catch((err) => {
+                                logging.error(NAMESPACE, 'Error while publishing the a pending DID transaction to the blockchain: ', err);
+
+                                didTx.status = config.txStatus.cancelled;
+                                didTx.extraInfo = {
+                                    error: err
+                                };
                                 didTx.save();
                             });
-                        });
                     });
                     return true;
                 })
@@ -138,8 +159,16 @@ function dailyCronjob(network: string) {
     cron.schedule('*/5 * * * * *', () => {
         logging.info(NAMESPACE, `Started cronjob: dailyCronjob: ${network}`);
 
-        const conn = network === config.blockchain.testnet ? connTestnet : connMainnet;
+        rpcService.getBalance(network, config.blockchain.eidSidechain.wallets.keystores[0].address).then((balanceResponse) => {
+            console.log(balanceResponse);
+        });
 
+        const subject = 'Assist Service Daily Stats';
+        const html = '<table><tr><th>Address</th><th>Balance</th><th>Type</th></tr>';
+
+        //sendNotification.sendEmail(subject, config.smtpCreds.sender, html);
+
+        const conn = network === config.blockchain.testnet ? connTestnet : connMainnet;
         conn.models.User.find()
             .select('-password')
             .exec()

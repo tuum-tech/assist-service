@@ -56,7 +56,7 @@ const DEFAULT_WALLET =
     '{"address":"365b70f14e10b02bef7e463eca6aa3e75ca3cdb1","crypto":{"cipher":"aes-128-ctr","ciphertext":"9e67a5e03097410530156386e1268b3d0a0514e68097360e2e6923e2062c5658","cipherparams":{"iv":"bc3a82c8d7eb92e3eb340fd994b77fdc"},"kdf":"scrypt","kdfparams":{"dklen":32,"n":262144,"p":1,"r":8,"salt":"0acca53ddca20aa77ff2cbdede6b92f45e2d552898d8199d324f381fddf78b71"},"mac":"66368304132d966967e85ac60ca7c5bc2f2fb46f70c76942459b9f3e11b4e077"},"id":"3c248f12-f4de-4c51-b967-ae700837f76a","version":3}';
 const EID_SIDECHAIN_WALLETS = {
     pass: process.env.EID_WALLET_PASS || '',
-    addresses: [
+    keystores: [
         JSON.parse(process.env.EID_WALLET1 || DEFAULT_WALLET),
         JSON.parse(process.env.EID_WALLET2 || DEFAULT_WALLET),
         JSON.parse(process.env.EID_WALLET3 || DEFAULT_WALLET),

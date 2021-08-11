@@ -53,8 +53,15 @@ router.use('/v1/eidSidechain', eidSidechainRoutes);
 router.use((req, res, next) => {
     const error = new Error('Not found');
 
+    let _network = req.query.network;
+    if (!_network) {
+        let { network } = req.body;
+        _network = network ? network : config.blockchain.mainnet;
+    }
+
     res.status(404).json({
         _status: 'ERR',
+        network: _network,
         _error: {
             code: 404,
             message: error.message
