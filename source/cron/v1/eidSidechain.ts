@@ -24,7 +24,7 @@ function publishDIDTx(network: string) {
     rpcService
         .getBlockHeight(network)
         .then((heightResponse) => {
-            let currentHeight: number = heightResponse.height - 1;
+            let currentHeight: number = heightResponse.data.height - 1;
             return currentHeight;
         })
         .then((height) => {
@@ -55,6 +55,7 @@ function publishDIDTx(network: string) {
                         })
                         .catch((err: any) => {
                             logging.error(NAMESPACE, 'Error while getting the latest block from the blockchain: ', err);
+                            return false;
                         });
                     return true;
                 })
@@ -145,7 +146,7 @@ function publishDIDTx(network: string) {
             logging.info(NAMESPACE, `Completed cronjob: publishDIDTx: ${network}`);
             setTimeout(() => {
                 publishDIDTx(network);
-            }, 10000);
+            }, 5000);
         })
         .catch((err) => {
             logging.error(NAMESPACE, 'Error while trying to run the cronjob to publish DID txes: ', err);

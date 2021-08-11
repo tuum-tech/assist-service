@@ -28,21 +28,21 @@ async function handleRoute(url: string, body: any, headers: any, post: boolean =
     return response;
 }
 
-function returnSuccess(res: any, code: number, network: string, data: any) {
-    const returned = {
+function returnSuccess(network: string, code: number, data: any) {
+    const response = {
         meta: { code, message: 'OK', network },
-        data
+        data: data
     };
-    res.send(returned);
+    return response;
 }
 
-function returnError(res: any, code: number, network: string, error: any) {
-    const returned = {
+function returnError(network: string, code: number, error: any) {
+    const response = {
         meta: { code, message: 'ERR', network },
-        error
+        error: error
     };
 
-    res.send(returned);
+    return response;
 }
 
 export default { handleRoute, returnSuccess, returnError };

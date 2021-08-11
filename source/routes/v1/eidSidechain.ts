@@ -6,7 +6,7 @@ const router = express.Router();
 
 router.post('/create/didTx', controller.createDIDTx);
 router.get('/get/didTxes', controller.getAllDIDTxes);
-router.get('/get/didTx/confirmation_id/:confirmation_id', controller.getDIDTxFromConfirmationId);
+router.get('/get/didTx/confirmationId/:confirmationId', controller.getDIDTxFromConfirmationId);
 // router.post('/create/didTx', extractJWT, controller.createDIDTx);
 // router.get('/get/didTxes', extractJWT, controller.getAllDIDTxes);
 

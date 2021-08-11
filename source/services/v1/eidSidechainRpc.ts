@@ -1,5 +1,6 @@
 import config from '../../config/config';
 import logging from '../../config/logging';
+import commonService from './common';
 
 const NAMESPACE = 'Service: EID Sidechain';
 
@@ -101,33 +102,18 @@ async function getBlockHeight(network: string) {
         .getBlockNumber()
         .then((height: any) => {
             if (height) {
-                return {
-                    _status: 'OK',
-                    network,
+                let data = {
                     height
                 };
+                return commonService.returnSuccess(network, 200, data);
             } else {
-                return {
-                    _status: 'ERR',
-                    network,
-                    _error: {
-                        code: 401,
-                        message: 'Could not get height'
-                    }
-                };
+                return commonService.returnError(network, 401, 'Could not get height');
             }
         })
-        .catch((err: any) => {
-            logging.error(NAMESPACE, 'Error while trying to get block height: ', err);
+        .catch((error: any) => {
+            logging.error(NAMESPACE, 'Error while trying to get block height: ', error);
 
-            return {
-                _status: 'ERR',
-                network,
-                _error: {
-                    code: 500,
-                    message: err
-                }
-            };
+            return commonService.returnError(network, 500, error);
         });
     return res;
 }
@@ -139,38 +125,23 @@ async function getBalance(network: string, address: string) {
         .getBalance(web3.utils.toChecksumAddress(address))
         .then((value: any) => {
             if (value) {
-                return {
-                    _status: 'OK',
-                    network,
+                let data = {
                     value: Number(web3.utils.fromWei(value))
                 };
+                return commonService.returnSuccess(network, 200, data);
             } else {
-                return {
-                    _status: 'ERR',
-                    network,
-                    _error: {
-                        code: 401,
-                        message: 'Could not get balance'
-                    }
-                };
+                return commonService.returnError(network, 401, 'Could not get balance');
             }
         })
-        .catch((err: any) => {
-            logging.error(NAMESPACE, 'Error while trying to get balance of an address: ', err);
+        .catch((error: any) => {
+            logging.error(NAMESPACE, 'Error while trying to get balance of an address: ', error);
 
-            return {
-                _status: 'ERR',
-                network,
-                _error: {
-                    code: 500,
-                    message: err
-                }
-            };
+            return commonService.returnError(network, 500, error);
         });
     return res;
 }
 
-async function resolve_did(network: string, did: string) {
+async function resolveDid(network: string, did: string) {
     const body: any = {
         method: 'did_resolveDID',
         params: [
@@ -180,47 +151,12 @@ async function resolve_did(network: string, did: string) {
         ],
         id: '1'
     };
-
-    const ret: any = await handleRoute(network, url, body, getEidSidechainHeaders(), true);
-
-    const fetchResponse = await fetch(`https://api.github.com/repos/${req.params.owner}/${req.params.repos}/issues`, postData);
-    const response = await fetchResponse.json();
-
     const rpcUrl = network === config.blockchain.mainnet ? config.blockchain.eidSidechain.mainnet.rpcUrl : config.blockchain.eidSidechain.testnet.rpcUrl;
-    let web3 = new Web3(rpcUrl);
-    const res: any = await web3.eth
-        .getBalance(web3.utils.toChecksumAddress(address))
-        .then((value: any) => {
-            if (value) {
-                return {
-                    _status: 'OK',
-                    network,
-                    value: Number(web3.utils.fromWei(value))
-                };
-            } else {
-                return {
-                    _status: 'ERR',
-                    network,
-                    _error: {
-                        code: 401,
-                        message: 'Could not get balance'
-                    }
-                };
-            }
-        })
-        .catch((err: any) => {
-            logging.error(NAMESPACE, 'Error while trying to get balance of an address: ', err);
-
-            return {
-                _status: 'ERR',
-                network,
-                _error: {
-                    code: 500,
-                    message: err
-                }
-            };
-        });
-    return res;
+    const res: any = await commonService.handleRoute(rpcUrl, body, getEidSidechainHeaders(), true);
+    if (res.error) {
+        return commonService.returnError(network, 500, res.error);
+    }
+    return commonService.returnSuccess(network, 200, res.data);
 }
 
-export default { signTx, getBlockHeight, getBalance };
+export default { signTx, getBlockHeight, getBalance, resolveDid };

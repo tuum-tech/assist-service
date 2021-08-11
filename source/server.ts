@@ -1,12 +1,12 @@
 import cors from 'cors';
 import express from 'express';
-import mongoose from 'mongoose';
 import logging from './config/logging';
 import config from './config/config';
 import cronEIDSidechain from './cron/v1/eidSidechain';
 import healthCheckRoutes from './routes/v1/healthCheck';
 import authRoutes from './routes/v1/user';
 import eidSidechainRoutes from './routes/v1/eidSidechain';
+import commonService from './services/v1/common';
 
 const NAMESPACE = 'Server';
 const router = express();
@@ -53,20 +53,18 @@ router.use('/v1/eidSidechain', eidSidechainRoutes);
 router.use((req, res, next) => {
     const error = new Error('Not found');
 
-    let _network = req.query.network;
-    if (!_network) {
-        let { network } = req.body;
-        _network = network ? network : config.blockchain.mainnet;
-    }
-
-    res.status(404).json({
-        _status: 'ERR',
-        network: _network,
-        _error: {
-            code: 404,
-            message: error.message
+    let network = (): string => {
+        let result = config.blockchain.mainnet;
+        if (!req.query.network) {
+            let { network } = req.body;
+            result = network ? network : config.blockchain.mainnet;
+        } else {
+            result = req.query.network.toString();
         }
-    });
+        return result;
+    };
+
+    res.status(404).json(commonService.returnError(network(), 404, error));
 });
 
 router.listen(config.server.port, () => {
