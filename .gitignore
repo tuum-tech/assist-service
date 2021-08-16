@@ -107,4 +107,5 @@ dist
 # Custom
 build/**/*
 certs/**/*
+.ebextensions_prod/
 
