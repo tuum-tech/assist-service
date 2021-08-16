@@ -28,9 +28,11 @@ const createDIDTx = (req: Request, res: Response, next: NextFunction) => {
 
     // TODO: Check if requestFrom DID is valid by resolving it
 
-    // Verify whether the given payload is valid by trying to create a transaction out of it
+    // Select a random wallet to use
     let wallet = config.blockchain.eidSidechain.wallets.keystores[Math.floor(Math.random() * config.blockchain.eidSidechain.wallets.keystores.length)];
 
+    // Verify whether the given payload is valid by trying to create a transaction out of it and then proceed
+    // to the next step if valid
     const result: any = rpcService
         .signTx(network, wallet, JSON.stringify(didRequest))
         .then((res: any) => {
