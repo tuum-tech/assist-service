@@ -35,10 +35,4 @@ function sendEmail(subject: string, to: string, html: string, attachments?: any)
         });
 }
 
-/* TODO: How to send email
-    const subject = 'Profile Email verification';
-    const text = `test text`;
-    const html = `test html <a href="https://getdids.com">hello</a> to proceed with Profile Onboarding process`;
-    sendNotification.sendEmail(subject, config.smtpCreds.sender, text, html); */
-
 export default { sendEmail };

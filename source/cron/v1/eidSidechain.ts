@@ -154,18 +154,16 @@ function publishDIDTx(network: string) {
 }
 
 function dailyCronjob(network: string) {
-    // TODO: Uncomment this when going to production
-    //cron.schedule('0 0 * * * *', () => {
-
-    cron.schedule('*/5 * * * * *', async () => {
+    cron.schedule('0 0 * * * *', async () => {
         logging.info(NAMESPACE, `Started cronjob: dailyCronjob: ${network}`);
 
-        const today = new Date('2021-08-05');
+        let yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
+
+        const conn = network === config.blockchain.testnet ? connTestnet : connMainnet;
 
         // ---------------------------------------------------------------------------------------
 
-        // Reset the user accounts for today and get some general stats
-        const conn = network === config.blockchain.testnet ? connTestnet : connMainnet;
         let generalUserStats: any = {
             free: {
                 today: 0,
@@ -191,7 +189,7 @@ function dailyCronjob(network: string) {
                     generalUserStats.premium.today += user.requests.premiumEndpoints.today;
                     generalUserStats.premium.all += premiumEndpointsAll;
                     generalUserStats.numUsersAllTime += 1;
-                    if (new Date(user.createdAt) >= today) {
+                    if (new Date(user.createdAt) >= yesterday) {
                         generalUserStats.numUsersToday += 1;
                         generalUserStats.usersToday[user.username] = {
                             free: freeEndpointsAll,
@@ -199,25 +197,25 @@ function dailyCronjob(network: string) {
                         };
                     }
 
-                    // Reset
+                    // Reset the user accounts for today and get some general stats
                     user.requests.freeEndpoints.today = 0;
                     user.requests.premiumEndpoints.today = 0;
                     user.save();
                 });
             })
             .catch((err) => {
-                logging.error(NAMESPACE, 'Error while trying to reset daily limit for the users: ', err);
+                logging.error(NAMESPACE, 'Error while trying to retrieve users from the database: ', err);
             });
         // Get general user stats
         const getGeneralUserStats = async () => {
             let generalUserStatsHtml: string = `<table><tr><th></th><th>Today</th><th>All time</th></tr>`;
             generalUserStatsHtml += `<tr><th>Number of Users</th><th>${generalUserStats.numUsersToday}</th><th>${generalUserStats.numUsersAllTime}</th></tr></table><br>`;
 
-            generalUserStatsHtml += `<table><tr><th>Request Type</th><th>Today</th><th>All time</th></tr>`;
+            generalUserStatsHtml += `<table><tr><th>Endpoint Type</th><th>Today</th><th>All time</th></tr>`;
             generalUserStatsHtml += `<tr><td>Free</td><td>${generalUserStats.free.today}</td><td>${generalUserStats.free.all}</td></tr>`;
             generalUserStatsHtml += `<tr><td>Premium</td><td>${generalUserStats.premium.today}</td><td>${generalUserStats.premium.all}</td></tr></table><br>`;
 
-            generalUserStatsHtml += `<table><tr><th>New User</th><th>Free</th><th>Premium</th></tr>`;
+            generalUserStatsHtml += `<table><tr><th>New User Today</th><th>Free Endpoints</th><th>Premium Endpoints</th></tr>`;
             for (let username in generalUserStats.usersToday) {
                 generalUserStatsHtml += `<tr><td>${username}</td><td>${generalUserStats.usersToday[username].free}</td><td>${generalUserStats.usersToday[username].premium}</td></tr>`;
             }
@@ -258,6 +256,97 @@ function dailyCronjob(network: string) {
             walletStats += '</table>';
             return walletStats;
         };
+
+        // ---------------------------------------------------------------------------------------
+
+        let generalTxesStats: any = {
+            didTxes: {
+                numTxesToday: 0,
+                numTxesAllTime: 0,
+                txesToday: {},
+                txesAllTime: {}
+            }
+            // Add in other types of transactions here in the future
+            //numTxesToday: 0,
+            //numTxesAllTime: 0
+        };
+        // Aggregate did txes from today
+        let resultYesterday = await conn.models.DidTx.aggregate([
+            { $match: { createdAt: { $gt: yesterday } } },
+            { $group: { _id: '$requestFrom.username', count: { $sum: 1 } } },
+            { $project: { _id: 0, username: '$_id', count: '$count' } }
+        ]);
+        for (let r of resultYesterday) {
+            let numTxesToday = r.count;
+            generalTxesStats.didTxes.numTxesToday += numTxesToday;
+            generalTxesStats.didTxes.txesToday[r.username] = numTxesToday;
+        }
+        // Aggregate did txes from all time
+        let resultAllTime = await conn.models.DidTx.aggregate([{ $group: { _id: '$requestFrom.username', count: { $sum: 1 } } }, { $project: { _id: 0, username: '$_id', count: '$count' } }]);
+        for (let r of resultAllTime) {
+            let numTxesAllTime = r.count;
+            generalTxesStats.didTxes.numTxesAllTime += numTxesAllTime;
+            generalTxesStats.didTxes.txesAllTime[r.username] = numTxesAllTime;
+        }
+
+        // Get all the transaction stats
+        const getGeneralTxStats = async () => {
+            let generalTxStatsHtml: string = `<table><tr><th></th><th>Today</th><th>All time</th></tr>`;
+            generalTxStatsHtml += `<tr><th>Number of Transactions</th><th>${generalTxesStats.didTxes.numTxesToday}</th><th>${generalTxesStats.didTxes.numTxesAllTime}</th></tr></table><br>`;
+
+            // Today
+            generalTxStatsHtml += `<table><tr><th>Request From</th><th>Numer of transactions Today</th></tr>`;
+            for (let username in generalTxesStats.didTxes.txesToday) {
+                generalTxStatsHtml += `<tr><td>${username}</td><td>${generalTxesStats.didTxes.txesToday[username]}</td></tr>`;
+            }
+            generalTxStatsHtml += `</table><br>`;
+
+            // All time
+            generalTxStatsHtml += `<table><tr><th>Request From</th><th>Numer of transactions All time</th></tr>`;
+            for (let username in generalTxesStats.didTxes.txesAllTime) {
+                generalTxStatsHtml += `<tr><td>${username}</td><td>${generalTxesStats.didTxes.txesAllTime[username]}</td></tr>`;
+            }
+            generalTxStatsHtml += `</table>`;
+
+            return generalTxStatsHtml;
+        };
+
+        // ---------------------------------------------------------------------------------------
+
+        let outlierDidTxesToday: any = {
+            numTxes: 0,
+            txes: []
+        };
+        conn.models.DidTx.find({ createdAt: { $gt: yesterday } })
+            .exec()
+            .then((didTxes) => {
+                didTxes.map((didTx) => {
+                    if (didTx.status === config.txStatus.cancelled) {
+                        outlierDidTxesToday.numTxes += 1;
+                        outlierDidTxesToday.txes.push(didTx);
+                    }
+                });
+            })
+            .catch((err) => {
+                logging.error(NAMESPACE, 'Error while trying to retrieve outlier transactions from yesterday: ', err);
+            });
+
+        // Get all the outlier transactions
+        const getOutlierTxesToday = async () => {
+            let outlierTxesTodayHtml: string = `<table><tr><th>Number of outlier transactions</th><th>${outlierDidTxesToday.numTxes}</th></tr></table><br>`;
+
+            // Individual transaction details
+            outlierTxesTodayHtml += `<table><tr><th>Timestamp</th><th>Confirmation Id</th><th>Request From</th><th>DID</th><th>Status</th><th>Extra Info</th></tr>`;
+            outlierDidTxesToday.txes.map((didTx: any) => {
+                outlierTxesTodayHtml += `<tr><td>${didTx.createdAt}</td><td>${didTx._id}</td><td>${didTx.requestFrom.username}</td><td>${didTx.did}</td><td>${didTx.status}</td><td>${JSON.stringify(
+                    didTx.extraInfo
+                )}</td></tr>`;
+            });
+            outlierTxesTodayHtml += `</table>`;
+
+            return outlierTxesTodayHtml;
+        };
+
         // ---------------------------------------------------------------------------------------
 
         let htmlContent: string = `
@@ -287,10 +376,10 @@ function dailyCronjob(network: string) {
                 ${await getWalletStats()}
                 <h2>General User Stats</h2>
                 ${await getGeneralUserStats()}
-                <h2>DID Transactions</h2>
-                {didtx_stats}
-                <h2>Cancelled Transactions</h2>
-                {quarantined_transactions}
+                <h2>Transactions</h2>
+                ${await getGeneralTxStats()}
+                <h2>Outlier Transactions Today</h2>
+                ${await getOutlierTxesToday()}
             </body>
         </html>
         `;
