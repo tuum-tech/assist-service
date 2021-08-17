@@ -154,7 +154,7 @@ function publishDIDTx(network: string) {
 }
 
 function dailyCronjob(network: string) {
-    cron.schedule('0 0 * * * *', async () => {
+    cron.schedule('0 0 0 * * *', async () => {
         logging.info(NAMESPACE, `Started cronjob: dailyCronjob: ${network}`);
 
         let yesterday = new Date();
