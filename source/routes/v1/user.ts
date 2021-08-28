@@ -8,5 +8,6 @@ router.get('/validate', extractJWT, controller.validateToken);
 router.post('/register', controller.register);
 router.post('/login', controller.login);
 router.get('/get/all', extractJWT, controller.getAllUsers);
+router.get('/get/stats', extractJWT, controller.getStats);
 
 export = router;

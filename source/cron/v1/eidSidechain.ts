@@ -6,6 +6,8 @@ import rpcService from '../../services/v1/eidSidechainRpc';
 import connMainnet from '../../connections/mainnet';
 import connTestnet from '../../connections/testnet';
 import sendNotification from '../../functions/sendNotification';
+import userStats from '../../functions/stats/user';
+import eidSidechainStats from '../../functions/stats/eidSidechain';
 
 const NAMESPACE = 'Cron: EID Sidechain';
 
@@ -153,203 +155,144 @@ function publishDIDTx(network: string) {
         });
 }
 
-function dailyCronjob(network: string) {
-    cron.schedule('0 0 0 * * *', async () => {
-        logging.info(NAMESPACE, `Started cronjob: dailyCronjob: ${network}`);
+async function dailyCronjob(network: string) {
+    // * * * * * * format = second minute hour dayofmonth month dayofweek
+    cron.schedule(
+        '40 14 19 * * *',
+        async () => {
+            logging.info(NAMESPACE, `Started cronjob: dailyCronjob: ${network}`);
 
-        let yesterday = new Date();
-        yesterday.setDate(yesterday.getDate() - 1);
+            let beginDate = new Date();
+            let endDate = new Date(`${beginDate.getUTCFullYear()}-${('0' + (beginDate.getUTCMonth() + 1)).slice(-2)}-${('0' + beginDate.getUTCDate()).slice(-2)}`);
+            beginDate.setDate(beginDate.getDate() - 1);
 
-        const conn = network === config.blockchain.testnet ? connTestnet : connMainnet;
+            const conn = network === config.blockchain.testnet ? connTestnet : connMainnet;
 
-        // ---------------------------------------------------------------------------------------
+            // ---------------------------------------------------------------------------------------
 
-        let generalUserStats: any = {
-            free: {
-                today: 0,
-                all: 0
-            },
-            premium: {
-                today: 0,
-                all: 0
-            },
-            usersToday: {},
-            numUsersToday: 0,
-            numUsersAllTime: 0
-        };
-        conn.models.User.find()
-            .select('-password')
-            .exec()
-            .then((users) => {
-                users.map((user) => {
-                    let freeEndpointsAll = user.requests.freeEndpoints.all;
-                    let premiumEndpointsAll = user.requests.premiumEndpoints.all;
-                    generalUserStats.free.today += user.requests.freeEndpoints.today;
-                    generalUserStats.free.all += freeEndpointsAll;
-                    generalUserStats.premium.today += user.requests.premiumEndpoints.today;
-                    generalUserStats.premium.all += premiumEndpointsAll;
-                    generalUserStats.numUsersAllTime += 1;
-                    if (new Date(user.createdAt) >= yesterday) {
-                        generalUserStats.numUsersToday += 1;
-                        generalUserStats.usersToday[user.username] = {
-                            free: freeEndpointsAll,
-                            premium: premiumEndpointsAll
-                        };
-                    }
+            // Get general user stats
+            const getGeneralUserStats = async () => {
+                // Also make sure to reset the user accounts for today
+                let generalUserStatsToday = await userStats.getStats(network, beginDate, endDate, false);
+                let generalUserStatsAll = await userStats.getStats(network, null, endDate, false);
 
-                    // Reset the user accounts for today and get some general stats
-                    user.requests.freeEndpoints.today = 0;
-                    user.requests.premiumEndpoints.today = 0;
-                    user.save();
-                });
-            })
-            .catch((err) => {
-                logging.error(NAMESPACE, 'Error while trying to retrieve users from the database: ', err);
-            });
-        // Get general user stats
-        const getGeneralUserStats = async () => {
-            let generalUserStatsHtml: string = `<table><tr><th></th><th>Today</th><th>All time</th></tr>`;
-            generalUserStatsHtml += `<tr><th>Number of Users</th><th>${generalUserStats.numUsersToday}</th><th>${generalUserStats.numUsersAllTime}</th></tr></table><br>`;
+                let generalUserStatsHtml: string = `<table><tr><th></th><th>Today</th><th>All time</th></tr>`;
+                generalUserStatsHtml += `<tr><th>Number of Users</th><th>${generalUserStatsToday.data.numUsers}</th><th>${generalUserStatsAll.data.numUsers}</th></tr></table><br>`;
 
-            generalUserStatsHtml += `<table><tr><th>Endpoint Type</th><th>Today</th><th>All time</th></tr>`;
-            generalUserStatsHtml += `<tr><td>Free</td><td>${generalUserStats.free.today}</td><td>${generalUserStats.free.all}</td></tr>`;
-            generalUserStatsHtml += `<tr><td>Premium</td><td>${generalUserStats.premium.today}</td><td>${generalUserStats.premium.all}</td></tr></table><br>`;
+                generalUserStatsHtml += `<table><tr><th>Endpoint Type</th><th>Today</th><th>All time</th></tr>`;
+                generalUserStatsHtml += `<tr><td>Free</td><td>${generalUserStatsToday.data.freeAPI}</td><td>${generalUserStatsAll.data.freeAPI}</td></tr>`;
+                generalUserStatsHtml += `<tr><td>Premium</td><td>${generalUserStatsToday.data.premiumAPI}</td><td>${generalUserStatsAll.data.premiumAPI}</td></tr></table><br>`;
 
-            generalUserStatsHtml += `<table><tr><th>New User Today</th><th>Free Endpoints</th><th>Premium Endpoints</th></tr>`;
-            for (let username in generalUserStats.usersToday) {
-                generalUserStatsHtml += `<tr><td>${username}</td><td>${generalUserStats.usersToday[username].free}</td><td>${generalUserStats.usersToday[username].premium}</td></tr>`;
-            }
-            generalUserStatsHtml += `</table>`;
-
-            return generalUserStatsHtml;
-        };
-
-        // ---------------------------------------------------------------------------------------
-
-        // Get wallet stats
-        const getWalletStats = async () => {
-            let walletStats: string = '<table><tr><th>Address</th><th>Balance</th><th>Type</th></tr>';
-
-            let testAddress = '0x365b70f14e10b02bef7e463eca6aa3e75ca3cdb1';
-            let testBalance = await rpcService.getBalance(network, testAddress).then((balanceResponse) => {
-                if (balanceResponse.meta.message === 'OK') {
-                    return balanceResponse.data.value;
-                } else {
-                    logging.error(NAMESPACE, `Error while getting balance of '${testAddress}': `, balanceResponse.error);
-                    return 'ERR';
+                generalUserStatsHtml += `<table><tr><th>New User Today</th><th>Free Endpoints</th><th>Premium Endpoints</th></tr>`;
+                for (let username in generalUserStatsToday.data.users) {
+                    generalUserStatsHtml += `<tr><td>${username}</td><td>${generalUserStatsToday.data.users[username].freeAPI}</td><td>${generalUserStatsToday.data.users[username].premiumAPI}</td></tr>`;
                 }
-            });
-            walletStats += `<tr><td>${testAddress}</td><td>${testBalance}</td><td>Testing</td></tr>`;
+                generalUserStatsHtml += `</table>`;
 
-            for (let keystore of config.blockchain.eidSidechain.wallets.keystores) {
-                let address = `0x${keystore.address}`;
-                let balance = await rpcService.getBalance(network, address).then((balanceResponse) => {
-                    if (balanceResponse.meta.message === 'OK') {
-                        return balanceResponse.data.value;
-                    } else {
-                        logging.error(NAMESPACE, `Error while getting balance of '${address}': `, balanceResponse.error);
-                        return 'ERR';
-                    }
+                /* let generalUserStatsHtml: string = `<table><tr><th></th><th>Today</th><th>All time</th></tr>`;
+                generalUserStatsHtml += `<tr><th>Number of Users</th><th>${generalUserStats.data.numUsersToday}</th><th>${generalUserStats.data.numUsersAllTime}</th></tr></table><br>`;
+
+                generalUserStatsHtml += `<table><tr><th>Endpoint Type</th><th>Today</th><th>All time</th></tr>`;
+                generalUserStatsHtml += `<tr><td>Free</td><td>${generalUserStats.data.free.today}</td><td>${generalUserStats.data.free.all}</td></tr>`;
+                generalUserStatsHtml += `<tr><td>Premium</td><td>${generalUserStats.data.premium.today}</td><td>${generalUserStats.data.premium.all}</td></tr></table><br>`;
+
+                generalUserStatsHtml += `<table><tr><th>New User Today</th><th>Free Endpoints</th><th>Premium Endpoints</th></tr>`;
+                for (let username in generalUserStats.data.usersToday) {
+                    generalUserStatsHtml += `<tr><td>${username}</td><td>${generalUserStats.data.usersToday[username].free}</td><td>${generalUserStats.data.usersToday[username].premium}</td></tr>`;
+                }
+                generalUserStatsHtml += `</table>`; */
+
+                return generalUserStatsHtml;
+            };
+
+            // ---------------------------------------------------------------------------------------
+
+            // Get wallet stats
+            const getWalletStats = async () => {
+                let walletStats: string = '<table><tr><th>Address</th><th>Balance</th></tr>';
+
+                for (let keystore of config.blockchain.eidSidechain.wallets.keystores) {
+                    let address = `0x${keystore.address}`;
+                    let balance = await rpcService.getBalance(network, address).then((balanceResponse) => {
+                        if (balanceResponse.meta.message === 'OK') {
+                            return balanceResponse.data.value;
+                        } else {
+                            logging.error(NAMESPACE, `Error while getting balance of '${address}': `, balanceResponse.error);
+                            return 'ERR';
+                        }
+                    });
+                    walletStats += `<tr><td>${address}</td><td>${balance}</td></tr>`;
+                }
+                walletStats += '</table>';
+                return walletStats;
+            };
+
+            // ---------------------------------------------------------------------------------------
+
+            // Get all the transaction stats
+            const getGeneralTxStats = async () => {
+                let generalTxesStatsToday = await eidSidechainStats.getTxStats(network, beginDate, endDate);
+
+                let generalTxesStatsAllTime = await eidSidechainStats.getTxStats(network, null, endDate);
+                let generalTxStatsHtml: string = `<table><tr><th></th><th>Today</th><th>All time</th></tr>`;
+                generalTxStatsHtml += `<tr><th>Number of Transactions</th><th>${generalTxesStatsToday.data.didTxes.numTxes}</th><th>${generalTxesStatsAllTime.data.didTxes.numTxes}</th></tr></table><br>`;
+
+                // Today
+                generalTxStatsHtml += `<table><tr><th>Request From</th><th>Numer of transactions Today</th></tr>`;
+                for (let username in generalTxesStatsToday.data.didTxes.txes) {
+                    generalTxStatsHtml += `<tr><td>${username}</td><td>${generalTxesStatsToday.data.didTxes.txes[username]}</td></tr>`;
+                }
+                generalTxStatsHtml += `</table><br>`;
+
+                // All time
+                generalTxStatsHtml += `<table><tr><th>Request From</th><th>Numer of transactions All time</th></tr>`;
+                for (let username in generalTxesStatsAllTime.data.didTxes.txes) {
+                    generalTxStatsHtml += `<tr><td>${username}</td><td>${generalTxesStatsAllTime.data.didTxes.txes[username]}</td></tr>`;
+                }
+                generalTxStatsHtml += `</table>`;
+
+                return generalTxStatsHtml;
+            };
+
+            // ---------------------------------------------------------------------------------------
+
+            // Get all the outlier transactions
+            const getOutlierTxesToday = async () => {
+                let outlierDidTxesToday: any = {
+                    numTxes: 0,
+                    txes: []
+                };
+
+                await conn.models.DidTx.find({ createdAt: { $gte: beginDate } })
+                    .exec()
+                    .then((didTxes) => {
+                        didTxes.map((didTx) => {
+                            if (didTx.status === config.txStatus.cancelled) {
+                                outlierDidTxesToday.numTxes += 1;
+                                outlierDidTxesToday.txes.push(didTx);
+                            }
+                        });
+                    })
+                    .catch((err) => {
+                        logging.error(NAMESPACE, 'Error while trying to retrieve outlier transactions from yesterday: ', err);
+                    });
+                let outlierTxesTodayHtml: string = `<table><tr><th>Number of outlier transactions</th><th>${outlierDidTxesToday.numTxes}</th></tr></table><br>`;
+
+                // Individual transaction details
+                outlierTxesTodayHtml += `<table><tr><th>Timestamp</th><th>Confirmation Id</th><th>Request From</th><th>DID</th><th>Status</th><th>Extra Info</th></tr>`;
+                outlierDidTxesToday.txes.map((didTx: any) => {
+                    outlierTxesTodayHtml += `<tr><td>${didTx.createdAt}</td><td>${didTx._id}</td><td>${didTx.requestFrom.username}</td><td>${didTx.did}</td><td>${
+                        didTx.status
+                    }</td><td>${JSON.stringify(didTx.extraInfo)}</td></tr>`;
                 });
-                walletStats += `<tr><td>${address}</td><td>${balance}</td><td>Production</td></tr>`;
-            }
-            walletStats += '</table>';
-            return walletStats;
-        };
+                outlierTxesTodayHtml += `</table>`;
 
-        // ---------------------------------------------------------------------------------------
+                return outlierTxesTodayHtml;
+            };
 
-        let generalTxesStats: any = {
-            didTxes: {
-                numTxesToday: 0,
-                numTxesAllTime: 0,
-                txesToday: {},
-                txesAllTime: {}
-            }
-            // Add in other types of transactions here in the future
-            //numTxesToday: 0,
-            //numTxesAllTime: 0
-        };
-        // Aggregate did txes from today
-        let resultYesterday = await conn.models.DidTx.aggregate([
-            { $match: { createdAt: { $gt: yesterday } } },
-            { $group: { _id: '$requestFrom.username', count: { $sum: 1 } } },
-            { $project: { _id: 0, username: '$_id', count: '$count' } }
-        ]);
-        for (let r of resultYesterday) {
-            let numTxesToday = r.count;
-            generalTxesStats.didTxes.numTxesToday += numTxesToday;
-            generalTxesStats.didTxes.txesToday[r.username] = numTxesToday;
-        }
-        // Aggregate did txes from all time
-        let resultAllTime = await conn.models.DidTx.aggregate([{ $group: { _id: '$requestFrom.username', count: { $sum: 1 } } }, { $project: { _id: 0, username: '$_id', count: '$count' } }]);
-        for (let r of resultAllTime) {
-            let numTxesAllTime = r.count;
-            generalTxesStats.didTxes.numTxesAllTime += numTxesAllTime;
-            generalTxesStats.didTxes.txesAllTime[r.username] = numTxesAllTime;
-        }
+            // ---------------------------------------------------------------------------------------
 
-        // Get all the transaction stats
-        const getGeneralTxStats = async () => {
-            let generalTxStatsHtml: string = `<table><tr><th></th><th>Today</th><th>All time</th></tr>`;
-            generalTxStatsHtml += `<tr><th>Number of Transactions</th><th>${generalTxesStats.didTxes.numTxesToday}</th><th>${generalTxesStats.didTxes.numTxesAllTime}</th></tr></table><br>`;
-
-            // Today
-            generalTxStatsHtml += `<table><tr><th>Request From</th><th>Numer of transactions Today</th></tr>`;
-            for (let username in generalTxesStats.didTxes.txesToday) {
-                generalTxStatsHtml += `<tr><td>${username}</td><td>${generalTxesStats.didTxes.txesToday[username]}</td></tr>`;
-            }
-            generalTxStatsHtml += `</table><br>`;
-
-            // All time
-            generalTxStatsHtml += `<table><tr><th>Request From</th><th>Numer of transactions All time</th></tr>`;
-            for (let username in generalTxesStats.didTxes.txesAllTime) {
-                generalTxStatsHtml += `<tr><td>${username}</td><td>${generalTxesStats.didTxes.txesAllTime[username]}</td></tr>`;
-            }
-            generalTxStatsHtml += `</table>`;
-
-            return generalTxStatsHtml;
-        };
-
-        // ---------------------------------------------------------------------------------------
-
-        let outlierDidTxesToday: any = {
-            numTxes: 0,
-            txes: []
-        };
-        conn.models.DidTx.find({ createdAt: { $gt: yesterday } })
-            .exec()
-            .then((didTxes) => {
-                didTxes.map((didTx) => {
-                    if (didTx.status === config.txStatus.cancelled) {
-                        outlierDidTxesToday.numTxes += 1;
-                        outlierDidTxesToday.txes.push(didTx);
-                    }
-                });
-            })
-            .catch((err) => {
-                logging.error(NAMESPACE, 'Error while trying to retrieve outlier transactions from yesterday: ', err);
-            });
-
-        // Get all the outlier transactions
-        const getOutlierTxesToday = async () => {
-            let outlierTxesTodayHtml: string = `<table><tr><th>Number of outlier transactions</th><th>${outlierDidTxesToday.numTxes}</th></tr></table><br>`;
-
-            // Individual transaction details
-            outlierTxesTodayHtml += `<table><tr><th>Timestamp</th><th>Confirmation Id</th><th>Request From</th><th>DID</th><th>Status</th><th>Extra Info</th></tr>`;
-            outlierDidTxesToday.txes.map((didTx: any) => {
-                outlierTxesTodayHtml += `<tr><td>${didTx.createdAt}</td><td>${didTx._id}</td><td>${didTx.requestFrom.username}</td><td>${didTx.did}</td><td>${didTx.status}</td><td>${JSON.stringify(
-                    didTx.extraInfo
-                )}</td></tr>`;
-            });
-            outlierTxesTodayHtml += `</table>`;
-
-            return outlierTxesTodayHtml;
-        };
-
-        // ---------------------------------------------------------------------------------------
-
-        let htmlContent: string = `
+            let htmlContent: string = `
         <!DOCTYPE html>
         <html>
             <head>
@@ -384,11 +327,13 @@ function dailyCronjob(network: string) {
         </html>
         `;
 
-        const subject: string = `Assist Service Daily Stats - ${network}`;
-        sendNotification.sendEmail(subject, config.smtpCreds.sender, htmlContent);
+            const subject: string = `Assist Service Daily Stats - ${network}`;
+            sendNotification.sendEmail(subject, config.smtpCreds.sender, htmlContent);
 
-        logging.info(NAMESPACE, `Completed cronjob: dailyCronjob: ${network}`);
-    });
+            logging.info(NAMESPACE, `Completed cronjob: dailyCronjob: ${network}`);
+        },
+        { timezone: 'Etc/UTC' }
+    );
 }
 
 export default { publishDIDTx, dailyCronjob };

@@ -6,6 +6,8 @@ import logging from '../../config/logging';
 import connMainnet from '../../connections/mainnet';
 import connTestnet from '../../connections/testnet';
 import signJWT from '../../functions/signJTW';
+import userStats from '../../functions/stats/user';
+import commonFunction from '../../functions/common';
 import commonService from '../../services/v1/common';
 
 const NAMESPACE = 'Controller: User';
@@ -137,8 +139,13 @@ const login = (req: Request, res: Response, next: NextFunction) => {
 };
 
 const getAllUsers = (req: Request, res: Response, next: NextFunction) => {
+    const authTokenDecoded = res.locals.jwt;
+    const username = authTokenDecoded['username'];
+
     const network = req.query.network ? req.query.network.toString() : config.blockchain.mainnet;
     const conn = network === config.blockchain.testnet ? connTestnet : connMainnet;
+
+    // TODO: Need to add to user free API count
 
     conn.models.User.find()
         .select('-password')
@@ -157,4 +164,35 @@ const getAllUsers = (req: Request, res: Response, next: NextFunction) => {
         });
 };
 
-export default { validateToken, register, login, getAllUsers };
+const getStats = (req: Request, res: Response, next: NextFunction) => {
+    const authTokenDecoded = res.locals.jwt;
+    const username = authTokenDecoded['username'];
+
+    const network = req.query.network ? req.query.network.toString() : config.blockchain.mainnet;
+
+    const dateString = req.query.created ? req.query.created.toString() : 'today';
+    let beginDate = commonFunction.getDateFromString(dateString);
+    if (beginDate == null) {
+        let error = 'Date can only be passed in the following format: [today|yesterday|YYYY-MM-DD]';
+        return res.status(500).json(commonService.returnError(network, 500, error));
+    }
+    let endDate = new Date(`${beginDate.getUTCFullYear()}-${('0' + (beginDate.getUTCMonth() + 1)).slice(-2)}-${('0' + beginDate.getUTCDate()).slice(-2)}`);
+    if (dateString === 'today' || dateString === 'yesterday') {
+        beginDate.setDate(beginDate.getDate() - 1);
+    } else {
+        endDate.setDate(endDate.getDate() + 1);
+    }
+
+    // TODO: Need to add to user free API count
+
+    userStats.getStats(network, beginDate, endDate).then((stats) => {
+        if (stats.error !== null) {
+            logging.error(NAMESPACE, 'Error while trying to get user stats: ', stats.error);
+            return res.status(500).json(commonService.returnError(network, 500, stats.error));
+        } else {
+            return res.status(200).json(commonService.returnSuccess(network, 200, stats.data));
+        }
+    });
+};
+
+export default { validateToken, register, login, getAllUsers, getStats };
