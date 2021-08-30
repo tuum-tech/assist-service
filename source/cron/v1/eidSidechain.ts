@@ -189,19 +189,6 @@ async function dailyCronjob(network: string) {
                 }
                 generalUserStatsHtml += `</table>`;
 
-                /* let generalUserStatsHtml: string = `<table><tr><th></th><th>Today</th><th>All time</th></tr>`;
-                generalUserStatsHtml += `<tr><th>Number of Users</th><th>${generalUserStats.data.numUsersToday}</th><th>${generalUserStats.data.numUsersAllTime}</th></tr></table><br>`;
-
-                generalUserStatsHtml += `<table><tr><th>Endpoint Type</th><th>Today</th><th>All time</th></tr>`;
-                generalUserStatsHtml += `<tr><td>Free</td><td>${generalUserStats.data.free.today}</td><td>${generalUserStats.data.free.all}</td></tr>`;
-                generalUserStatsHtml += `<tr><td>Premium</td><td>${generalUserStats.data.premium.today}</td><td>${generalUserStats.data.premium.all}</td></tr></table><br>`;
-
-                generalUserStatsHtml += `<table><tr><th>New User Today</th><th>Free Endpoints</th><th>Premium Endpoints</th></tr>`;
-                for (let username in generalUserStats.data.usersToday) {
-                    generalUserStatsHtml += `<tr><td>${username}</td><td>${generalUserStats.data.usersToday[username].free}</td><td>${generalUserStats.data.usersToday[username].premium}</td></tr>`;
-                }
-                generalUserStatsHtml += `</table>`; */
-
                 return generalUserStatsHtml;
             };
 
@@ -263,7 +250,7 @@ async function dailyCronjob(network: string) {
                     txes: []
                 };
 
-                await conn.models.DidTx.find({ createdAt: { $gte: beginDate } })
+                await conn.models.DidTx.find({ createdAt: { $gte: beginDate, $lt: endDate } })
                     .exec()
                     .then((didTxes) => {
                         didTxes.map((didTx) => {
