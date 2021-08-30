@@ -31,8 +31,8 @@ const MONGO_OPTIONS = {
 
 const MONGO_USERNAME = process.env.MONGO_USERNAME || 'mongoadmin';
 const MONGO_PASSWORD = process.env.MONGO_PASSWORD || 'mongopass';
-const MONGO_HOST_MAINNET = `${process.env.MONGO_HOST}:${process.env.MONGO_PORT}/assistdb` || 'localhost:37018/assistdb';
-const MONGO_HOST_TESTNET = `${process.env.MONGO_HOST}:${process.env.MONGO_PORT}/assistdb-testnet` || 'localhost:37018/assistdb-testnet';
+const MONGO_HOST_MAINNET = `${process.env.MONGO_HOST}:${process.env.MONGO_PORT}/assist-service-mainnet` || 'localhost:37018/assist-service-mainnet';
+const MONGO_HOST_TESTNET = `${process.env.MONGO_HOST}:${process.env.MONGO_PORT}/assist-service-testnet` || 'localhost:37018/assist-service-testnet';
 
 const MONGO = {
     options: MONGO_OPTIONS,
