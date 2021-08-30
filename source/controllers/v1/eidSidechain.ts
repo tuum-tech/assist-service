@@ -7,14 +7,15 @@ import connMainnet from '../../connections/mainnet';
 import connTestnet from '../../connections/testnet';
 import eidSidechainStats from '../../functions/stats/eidSidechain';
 import commonFunction from '../../functions/common';
+import accountFunction from '../../functions/account';
 import commonService from '../../services/v1/common';
 import rpcService from '../../services/v1/eidSidechainRpc';
+import IUser from '../../interfaces/user';
 
 const NAMESPACE = 'Controller: EID Sidechain';
 
 const createDIDTx = (req: Request, res: Response, next: NextFunction) => {
     const authTokenDecoded = res.locals.jwt;
-    const username = authTokenDecoded['username'];
 
     let { network, didRequest, memo } = req.body;
     network = network ? network : config.blockchain.mainnet;
@@ -59,24 +60,17 @@ const createDIDTx = (req: Request, res: Response, next: NextFunction) => {
             } else {
                 const conn = network === config.blockchain.testnet ? connTestnet : connMainnet;
 
-                conn.models.User.find({ username })
-                    .exec()
-                    .then((users) => {
-                        if (users.length !== 1) {
-                            return res.status(401).json(commonService.returnError(network, 401, 'Unauthorized'));
+                accountFunction
+                    .handleAPILimit(conn, authTokenDecoded, true)
+                    .then((account) => {
+                        if (account.error) {
+                            return res.status(401).json(commonService.returnError(network, account.retCode, account.error));
                         }
-                        let user = users[0];
-                        let count: number = user.requests.premiumEndpoints.today;
-                        if (count >= user.requests.premiumEndpoints.dailyLimit) {
-                            let error = 'The user "' + user.username + '" has reached the daily API call limit of ' + config.user.premiumEndpointsDailyLimit;
-                            logging.error(NAMESPACE, 'Error while trying to create a DID transaction: ', error);
-
-                            return res.status(401).json(commonService.returnError(network, 401, error));
-                        }
+                        const user: IUser = account.user;
                         const didTx = new conn.models.DidTx({
                             _id: new mongoose.Types.ObjectId(),
                             did,
-                            requestFrom: { username },
+                            requestFrom: { username: user.username },
                             didRequest,
                             memo,
                             status: config.txStatus.pending
@@ -86,12 +80,12 @@ const createDIDTx = (req: Request, res: Response, next: NextFunction) => {
                             .then((result: any) => {
                                 const _result = JSON.parse(JSON.stringify(result));
                                 _result['confirmationId'] = _result['_id'];
-                                user.requests.premiumEndpoints.today += 1;
-                                user.requests.premiumEndpoints.all += 1;
-                                user.save();
                                 let data = {
                                     didTx: _result
                                 };
+                                user.requests.premiumEndpoints.today += 1;
+                                user.requests.premiumEndpoints.all += 1;
+                                user.save();
                                 return res.status(201).json(commonService.returnSuccess(network, 200, data));
                             })
                             .catch((error: any) => {
@@ -101,9 +95,9 @@ const createDIDTx = (req: Request, res: Response, next: NextFunction) => {
                             });
                     })
                     .catch((error) => {
-                        logging.error(NAMESPACE, `Error while trying to validate the user '${username}': `, error);
+                        logging.error(NAMESPACE, 'Error while trying to verify account API limit', error);
 
-                        return res.status(401).json(commonService.returnError(network, 401, error));
+                        return res.status(500).json(commonService.returnError(network, 500, error));
                     });
             }
         })
@@ -117,18 +111,15 @@ const createDIDTx = (req: Request, res: Response, next: NextFunction) => {
 
 const getAllDIDTxes = (req: Request, res: Response, next: NextFunction) => {
     const authTokenDecoded = res.locals.jwt;
-    const username = authTokenDecoded['username'];
 
     const network = req.query.network ? req.query.network.toString() : config.blockchain.mainnet;
     const conn = network === config.blockchain.testnet ? connTestnet : connMainnet;
-
-    // TODO: Need to add to user free API count
 
     const result: any = conn.models.DidTx.find()
         .exec()
         .then((results) => {
             if (results.length === 0) {
-                let error: string = 'Error while trying to get DID transactions';
+                let error = 'Error while trying to get all the DID transactions';
                 logging.error(NAMESPACE, error);
 
                 return res.status(404).json(commonService.returnError(network, 404, error));
@@ -137,7 +128,23 @@ const getAllDIDTxes = (req: Request, res: Response, next: NextFunction) => {
                     didTxes: results,
                     count: results.length
                 };
-                return res.status(200).json(commonService.returnSuccess(network, 200, data));
+                accountFunction
+                    .handleAPILimit(conn, authTokenDecoded, true)
+                    .then((account) => {
+                        if (account.error) {
+                            return res.status(401).json(commonService.returnError(network, account.retCode, account.error));
+                        }
+                        const user: IUser = account.user;
+                        user.requests.premiumEndpoints.today += 1;
+                        user.requests.premiumEndpoints.all += 1;
+                        user.save();
+                        return res.status(200).json(commonService.returnSuccess(network, 200, data));
+                    })
+                    .catch((error) => {
+                        logging.error(NAMESPACE, 'Error while trying to verify account API limit', error);
+
+                        return res.status(500).json(commonService.returnError(network, 500, error));
+                    });
             }
         })
         .catch((error) => {
@@ -150,13 +157,10 @@ const getAllDIDTxes = (req: Request, res: Response, next: NextFunction) => {
 
 const getDIDTxFromConfirmationId = (req: Request, res: Response, next: NextFunction) => {
     const authTokenDecoded = res.locals.jwt;
-    const username = authTokenDecoded['username'];
 
     const _id = req.params.confirmationId;
     const network = req.query.network ? req.query.network.toString() : config.blockchain.mainnet;
     const conn = network === config.blockchain.testnet ? connTestnet : connMainnet;
-
-    // TODO: Need to add to user free API count
 
     const result: any = conn.models.DidTx.findOne({ _id })
         .exec()
@@ -170,7 +174,23 @@ const getDIDTxFromConfirmationId = (req: Request, res: Response, next: NextFunct
                 let data = {
                     didTx
                 };
-                return res.status(200).json(commonService.returnSuccess(network, 200, data));
+                accountFunction
+                    .handleAPILimit(conn, authTokenDecoded, false)
+                    .then((account) => {
+                        if (account.error) {
+                            return res.status(401).json(commonService.returnError(network, account.retCode, account.error));
+                        }
+                        const user: IUser = account.user;
+                        user.requests.freeEndpoints.today += 1;
+                        user.requests.freeEndpoints.all += 1;
+                        user.save();
+                        return res.status(200).json(commonService.returnSuccess(network, 200, data));
+                    })
+                    .catch((error) => {
+                        logging.error(NAMESPACE, 'Error while trying to verify account API limit', error);
+
+                        return res.status(500).json(commonService.returnError(network, 500, error));
+                    });
             }
         })
         .catch((error) => {
@@ -183,9 +203,9 @@ const getDIDTxFromConfirmationId = (req: Request, res: Response, next: NextFunct
 
 const getDIDTxStats = (req: Request, res: Response, next: NextFunction) => {
     const authTokenDecoded = res.locals.jwt;
-    const username = authTokenDecoded['username'];
 
     const network = req.query.network ? req.query.network.toString() : config.blockchain.mainnet;
+    const conn = network === config.blockchain.testnet ? connTestnet : connMainnet;
 
     const dateString = req.query.created ? req.query.created.toString() : 'today';
     let beginDate = commonFunction.getDateFromString(dateString);
@@ -200,16 +220,33 @@ const getDIDTxStats = (req: Request, res: Response, next: NextFunction) => {
         endDate.setDate(endDate.getDate() + 1);
     }
 
-    // TODO: Need to add to user free API count
-
-    eidSidechainStats.getTxStats(network, beginDate, endDate).then((stats) => {
+    const result: any = eidSidechainStats.getTxStats(network, beginDate, endDate).then((stats) => {
         if (stats.error !== null) {
             logging.error(NAMESPACE, 'Error while trying to get DID tx stats: ', stats.error);
             return res.status(500).json(commonService.returnError(network, 500, stats.error));
         } else {
-            return res.status(200).json(commonService.returnSuccess(network, 200, stats.data.didTxes));
+            let data = stats.data;
+            accountFunction
+                .handleAPILimit(conn, authTokenDecoded, true)
+                .then((account) => {
+                    if (account.error) {
+                        return res.status(401).json(commonService.returnError(network, account.retCode, account.error));
+                    }
+                    const user: IUser = account.user;
+                    user.requests.premiumEndpoints.today += 1;
+                    user.requests.premiumEndpoints.all += 1;
+                    user.save();
+                    return res.status(200).json(commonService.returnSuccess(network, 200, data));
+                })
+                .catch((error) => {
+                    logging.error(NAMESPACE, 'Error while trying to verify account API limit', error);
+
+                    return res.status(500).json(commonService.returnError(network, 500, error));
+                });
         }
     });
+
+    return result;
 };
 
 export default {

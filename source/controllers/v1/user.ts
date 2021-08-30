@@ -6,9 +6,11 @@ import logging from '../../config/logging';
 import connMainnet from '../../connections/mainnet';
 import connTestnet from '../../connections/testnet';
 import signJWT from '../../functions/signJTW';
+import accountFunction from '../../functions/account';
 import userStats from '../../functions/stats/user';
 import commonFunction from '../../functions/common';
 import commonService from '../../services/v1/common';
+import IUser from '../../interfaces/user';
 
 const NAMESPACE = 'Controller: User';
 
@@ -140,14 +142,11 @@ const login = (req: Request, res: Response, next: NextFunction) => {
 
 const getAllUsers = (req: Request, res: Response, next: NextFunction) => {
     const authTokenDecoded = res.locals.jwt;
-    const username = authTokenDecoded['username'];
 
     const network = req.query.network ? req.query.network.toString() : config.blockchain.mainnet;
     const conn = network === config.blockchain.testnet ? connTestnet : connMainnet;
 
-    // TODO: Need to add to user free API count
-
-    conn.models.User.find()
+    const result: any = conn.models.User.find()
         .select('-password')
         .exec()
         .then((users) => {
@@ -155,20 +154,37 @@ const getAllUsers = (req: Request, res: Response, next: NextFunction) => {
                 users,
                 count: users.length
             };
-            return res.status(200).json(commonService.returnSuccess(network, 200, data));
+            accountFunction
+                .handleAPILimit(conn, authTokenDecoded, true)
+                .then((account) => {
+                    if (account.error) {
+                        return res.status(401).json(commonService.returnError(network, account.retCode, account.error));
+                    }
+                    const user: IUser = account.user;
+                    user.requests.premiumEndpoints.today += 1;
+                    user.requests.premiumEndpoints.all += 1;
+                    user.save();
+                    return res.status(200).json(commonService.returnSuccess(network, 200, data));
+                })
+                .catch((error) => {
+                    logging.error(NAMESPACE, 'Error while trying to verify account API limit', error);
+
+                    return res.status(500).json(commonService.returnError(network, 500, error));
+                });
         })
         .catch((error) => {
             logging.error(NAMESPACE, 'Error while trying to get all users: ', error);
 
             return res.status(500).json(commonService.returnError(network, 500, error));
         });
+    return result;
 };
 
 const getStats = (req: Request, res: Response, next: NextFunction) => {
     const authTokenDecoded = res.locals.jwt;
-    const username = authTokenDecoded['username'];
 
     const network = req.query.network ? req.query.network.toString() : config.blockchain.mainnet;
+    const conn = network === config.blockchain.testnet ? connTestnet : connMainnet;
 
     const dateString = req.query.created ? req.query.created.toString() : 'today';
     let beginDate = commonFunction.getDateFromString(dateString);
@@ -183,16 +199,33 @@ const getStats = (req: Request, res: Response, next: NextFunction) => {
         endDate.setDate(endDate.getDate() + 1);
     }
 
-    // TODO: Need to add to user free API count
-
-    userStats.getStats(network, beginDate, endDate).then((stats) => {
+    const result: any = userStats.getStats(network, beginDate, endDate).then((stats) => {
         if (stats.error !== null) {
             logging.error(NAMESPACE, 'Error while trying to get user stats: ', stats.error);
             return res.status(500).json(commonService.returnError(network, 500, stats.error));
         } else {
-            return res.status(200).json(commonService.returnSuccess(network, 200, stats.data));
+            let data = stats.data;
+            accountFunction
+                .handleAPILimit(conn, authTokenDecoded, true)
+                .then((account) => {
+                    if (account.error) {
+                        return res.status(401).json(commonService.returnError(network, account.retCode, account.error));
+                    }
+                    const user: IUser = account.user;
+                    user.requests.premiumEndpoints.today += 1;
+                    user.requests.premiumEndpoints.all += 1;
+                    user.save();
+                    return res.status(200).json(commonService.returnSuccess(network, 200, data));
+                })
+                .catch((error) => {
+                    logging.error(NAMESPACE, 'Error while trying to verify account API limit', error);
+
+                    return res.status(500).json(commonService.returnError(network, 500, error));
+                });
         }
     });
+
+    return result;
 };
 
 export default { validateToken, register, login, getAllUsers, getStats };

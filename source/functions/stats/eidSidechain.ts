@@ -19,25 +19,28 @@ async function getTxStats(network: string, beginDate: any, endDate: Date) {
     };
 
     // Aggregate did txes
-    let result: any[] = [];
-    if (beginDate == null) {
-        result = await conn.models.DidTx.aggregate([
-            { $match: { createdAt: { $lt: endDate } } },
-            { $group: { _id: '$requestFrom.username', count: { $sum: 1 } } },
-            { $project: { _id: 0, username: '$_id', count: '$count' } }
-        ]);
-    } else {
-        result = await conn.models.DidTx.aggregate([
-            { $match: { createdAt: { $gte: beginDate, $lt: endDate } } },
-            { $group: { _id: '$requestFrom.username', count: { $sum: 1 } } },
-            { $project: { _id: 0, username: '$_id', count: '$count' } }
-        ]);
+    let createdAtFilter = { $lt: endDate };
+    if (beginDate !== null) {
+        let greaterThanEqualToFilter = { $gte: beginDate };
+        createdAtFilter = { ...createdAtFilter, ...greaterThanEqualToFilter };
     }
-    for (let r of result) {
-        let numTxes = r.count;
-        generalTxesStats.data.didTxes.numTxes += numTxes;
-        generalTxesStats.data.didTxes.txes[r.username] = numTxes;
-    }
+
+    await conn.models.DidTx.aggregate([
+        { $match: { createdAt: createdAtFilter } },
+        { $group: { _id: '$requestFrom.username', count: { $sum: 1 } } },
+        { $project: { _id: 0, username: '$_id', count: '$count' } }
+    ])
+        .then((result) => {
+            for (let r of result) {
+                let numTxes = r.count;
+                generalTxesStats.data.didTxes.numTxes += numTxes;
+                generalTxesStats.data.didTxes.txes[r.username] = numTxes;
+            }
+        })
+        .catch((error) => {
+            logging.error(NAMESPACE, 'Error while trying to aggregate TX stats: ', error);
+            generalTxesStats.error = error;
+        });
 
     return generalTxesStats;
 }
