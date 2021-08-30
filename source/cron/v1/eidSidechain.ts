@@ -158,7 +158,7 @@ function publishDIDTx(network: string) {
 async function dailyCronjob(network: string) {
     // * * * * * * format = second minute hour dayofmonth month dayofweek
     cron.schedule(
-        '40 14 19 * * *',
+        '0 0 0 * * *',
         async () => {
             logging.info(NAMESPACE, `Started cronjob: dailyCronjob: ${network}`);
 
@@ -174,7 +174,7 @@ async function dailyCronjob(network: string) {
             const getGeneralUserStats = async () => {
                 // Also make sure to reset the user accounts for today
                 let generalUserStatsToday = await userStats.getStats(network, beginDate, endDate, false);
-                let generalUserStatsAll = await userStats.getStats(network, null, endDate, false);
+                let generalUserStatsAll = await userStats.getStats(network, null, endDate, true);
 
                 let generalUserStatsHtml: string = `<table><tr><th></th><th>Today</th><th>All time</th></tr>`;
                 generalUserStatsHtml += `<tr><th>Number of Users</th><th>${generalUserStatsToday.data.numUsers}</th><th>${generalUserStatsAll.data.numUsers}</th></tr></table><br>`;
