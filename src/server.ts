@@ -53,7 +53,7 @@ router.use('/v1/eidSidechain', eidSidechainRoutes);
 router.use((req, res, next) => {
     const error = new Error('Not found');
 
-    const network = (): string => {
+    const getNetwork = (): string => {
         let result = config.blockchain.mainnet;
         if (!req.query.network) {
             const { network } = req.body;
@@ -64,7 +64,7 @@ router.use((req, res, next) => {
         return result;
     };
 
-    res.status(404).json(commonService.returnError(network(), 404, error));
+    res.status(404).json(commonService.returnError(getNetwork(), 404, error));
 });
 
 router.listen(config.server.port, () => {

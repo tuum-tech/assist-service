@@ -17,7 +17,8 @@ const NAMESPACE = 'Controller: EID Sidechain';
 const createDIDTx = (req: Request, res: Response, next: NextFunction) => {
     const authTokenDecoded = res.locals.jwt;
 
-    let { network, didRequest, memo } = req.body;
+    const { didRequest, memo } = req.body;
+    let { network } = req.body;
     network = network ? network : config.blockchain.mainnet;
     let did: any = null;
     try {
@@ -38,11 +39,11 @@ const createDIDTx = (req: Request, res: Response, next: NextFunction) => {
     // to the next step if valid
     const result: any = rpcService
         .signTx(network, wallet, JSON.stringify(didRequest))
-        .then((res: any) => {
-            if (res.error) {
-                logging.error(NAMESPACE, 'Error while trying to sign the transaction: ', res.error);
+        .then((r: any) => {
+            if (r.error) {
+                logging.error(NAMESPACE, 'Error while trying to sign the transaction: ', r.error);
             }
-            return res.txDetails;
+            return r.txDetails;
         })
         .then((txDetails) => {
             if (!txDetails.hasOwnProperty('rawTx')) {
@@ -53,8 +54,8 @@ const createDIDTx = (req: Request, res: Response, next: NextFunction) => {
         })
         .then((valid) => {
             if (!valid) {
-                const error = 'Error while trying to sign the transaction';
-                logging.error(NAMESPACE, error);
+                const error = 'txDetails does not have property rawTx';
+                logging.error(NAMESPACE, 'Error while trying to sign the transaction:', error);
 
                 return res.status(500).json(commonService.returnError(network, 500, error));
             } else {
@@ -77,8 +78,8 @@ const createDIDTx = (req: Request, res: Response, next: NextFunction) => {
                         });
                         didTx
                             .save()
-                            .then((result: any) => {
-                                const _result = JSON.parse(JSON.stringify(result));
+                            .then((r: any) => {
+                                const _result = JSON.parse(JSON.stringify(r));
                                 _result.confirmationId = _result._id;
                                 const data = {
                                     didTx: _result
@@ -119,8 +120,8 @@ const getAllDIDTxes = (req: Request, res: Response, next: NextFunction) => {
         .exec()
         .then((results) => {
             if (results.length === 0) {
-                const error = 'Error while trying to get all the DID transactions';
-                logging.error(NAMESPACE, error);
+                const error = 'Could not find any DID transactions';
+                logging.error(NAMESPACE, 'Error while trying to get all the DID transactions', error);
 
                 return res.status(404).json(commonService.returnError(network, 404, error));
             } else {
@@ -166,8 +167,8 @@ const getDIDTxFromConfirmationId = (req: Request, res: Response, next: NextFunct
         .exec()
         .then((didTx) => {
             if (!didTx) {
-                const error: string = 'Error while trying to get a DID transaction from confirmationId';
-                logging.error(NAMESPACE, error);
+                const error: string = 'Could not find a DID transaction in the database';
+                logging.error(NAMESPACE, 'Error while trying to get a DID transaction from confirmationId', error);
 
                 return res.status(404).json(commonService.returnError(network, 404, error));
             } else {

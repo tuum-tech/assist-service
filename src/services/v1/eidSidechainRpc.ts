@@ -1,10 +1,10 @@
 import config from '../../config/config';
 import logging from '../../config/logging';
 import commonService from './common';
+import Web3 from 'web3';
+import { AbiItem } from 'web3-utils';
 
 const NAMESPACE = 'Service: EID Sidechain';
-
-const Web3 = require('web3');
 
 const getEidSidechainHeaders = (): any => {
     return {
@@ -18,7 +18,7 @@ async function signTx(network: string, wallet: any, payload: string, index: numb
     const contractAddress = network === config.blockchain.mainnet ? config.blockchain.eidSidechain.mainnet.contractAddress : config.blockchain.eidSidechain.testnet.contractAddress;
     const chainId = network === config.blockchain.mainnet ? config.blockchain.eidSidechain.mainnet.chainId : config.blockchain.eidSidechain.testnet.chainId;
 
-    const PUBLISH_CONTRACT_ABI = [
+    const PUBLISH_CONTRACT_ABI: AbiItem[] = [
         {
             inputs: [],
             stateMutability: 'nonpayable',

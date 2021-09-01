@@ -17,7 +17,7 @@ const NAMESPACE = 'Controller: User';
 const validateToken = (req: Request, res: Response, next: NextFunction) => {
     logging.info(NAMESPACE, 'Token validated, user authorized.');
 
-    const network = (): string => {
+    const getNetwork = (): string => {
         let result = config.blockchain.mainnet;
         if (!req.query.network) {
             const { network } = req.body;
@@ -31,11 +31,12 @@ const validateToken = (req: Request, res: Response, next: NextFunction) => {
     const data = {
         message: 'Token validated'
     };
-    return res.status(200).json(commonService.returnSuccess(network(), 200, data));
+    return res.status(200).json(commonService.returnSuccess(getNetwork(), 200, data));
 };
 
 const register = (req: Request, res: Response, next: NextFunction) => {
-    let { network, username, password } = req.body;
+    const { username, password } = req.body;
+    let { network } = req.body;
 
     network = network ? network : config.blockchain.mainnet;
 
@@ -99,7 +100,8 @@ const register = (req: Request, res: Response, next: NextFunction) => {
 };
 
 const login = (req: Request, res: Response, next: NextFunction) => {
-    let { network, username, password } = req.body;
+    const { username, password } = req.body;
+    let { network } = req.body;
 
     network = network ? network : config.blockchain.mainnet;
 
@@ -113,11 +115,11 @@ const login = (req: Request, res: Response, next: NextFunction) => {
 
                     return res.status(401).json(commonService.returnError(network, 401, 'Password mismatch'));
                 } else if (result) {
-                    signJWT(user, (error, token) => {
-                        if (error) {
-                            logging.error(NAMESPACE, 'Unable to sign token: ', error);
+                    signJWT(user, (err, token) => {
+                        if (err) {
+                            logging.error(NAMESPACE, 'Unable to sign token: ', err);
 
-                            return res.status(500).json(commonService.returnError(network, 500, error));
+                            return res.status(500).json(commonService.returnError(network, 500, err));
                         } else if (token) {
                             // We don't want to show the password during login
                             const _user = JSON.parse(JSON.stringify(user));

@@ -1,6 +1,5 @@
 import mongoose from 'mongoose';
 import IUser from '../interfaces/user';
-import config from '../config/config';
 import logging from '../config/logging';
 
 const NAMESPACE = 'Function: Account';
@@ -23,12 +22,11 @@ async function handleAPILimit(conn: mongoose.Connection, authTokenDecoded: any, 
                 result.retCode = 401;
                 return result;
             }
-            const user = users[0];
-            result.user = user;
-            const count: number = isPremiumEndpoint ? user.requests.premiumEndpoints.today : user.requests.freeEndpoints.today;
-            const dailyEndpointLimit = isPremiumEndpoint ? user.requests.premiumEndpoints.dailyLimit : user.requests.freeEndpoints.dailyLimit;
+            result.user = users[0];
+            const count: number = isPremiumEndpoint ? result.user.requests.premiumEndpoints.today : result.user.requests.freeEndpoints.today;
+            const dailyEndpointLimit = isPremiumEndpoint ? result.user.requests.premiumEndpoints.dailyLimit : result.user.requests.freeEndpoints.dailyLimit;
             if (count >= dailyEndpointLimit) {
-                const error = 'The user "' + user.username + '" has reached the daily API call limit of ' + dailyEndpointLimit;
+                const error = 'The user "' + result.user.username + '" has reached the daily API call limit of ' + dailyEndpointLimit;
                 logging.error(NAMESPACE, 'Error while trying to authenticate: ', error);
 
                 result.error = error;

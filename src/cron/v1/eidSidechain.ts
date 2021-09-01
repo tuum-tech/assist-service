@@ -8,10 +8,9 @@ import connTestnet from '../../connections/testnet';
 import sendNotification from '../../functions/sendNotification';
 import userStats from '../../functions/stats/user';
 import eidSidechainStats from '../../functions/stats/eidSidechain';
+import Web3 from 'web3';
 
 const NAMESPACE = 'Cron: EID Sidechain';
-
-const Web3 = require('web3');
 
 function publishDIDTx(network: string) {
     logging.info(NAMESPACE, `Started cronjob: publishDIDTx: ${network}`);
@@ -185,7 +184,9 @@ async function dailyCronjob(network: string) {
 
                 generalUserStatsHtml += `<table><tr><th>New User Today</th><th>Free Endpoints</th><th>Premium Endpoints</th></tr>`;
                 for (const username in generalUserStatsToday.data.users) {
-                    generalUserStatsHtml += `<tr><td>${username}</td><td>${generalUserStatsToday.data.users[username].freeAPI}</td><td>${generalUserStatsToday.data.users[username].premiumAPI}</td></tr>`;
+                    if (generalUserStatsToday.data.users.hasOwnProperty(username)) {
+                        generalUserStatsHtml += `<tr><td>${username}</td><td>${generalUserStatsToday.data.users[username].freeAPI}</td><td>${generalUserStatsToday.data.users[username].premiumAPI}</td></tr>`;
+                    }
                 }
                 generalUserStatsHtml += `</table>`;
 
@@ -227,14 +228,18 @@ async function dailyCronjob(network: string) {
                 // Today
                 generalTxStatsHtml += `<table><tr><th>Request From</th><th>Numer of transactions Today</th></tr>`;
                 for (const username in generalTxesStatsToday.data.didTxes.txes) {
-                    generalTxStatsHtml += `<tr><td>${username}</td><td>${generalTxesStatsToday.data.didTxes.txes[username]}</td></tr>`;
+                    if (generalTxesStatsToday.data.didTxes.txes.hasOwnProperty(username)) {
+                        generalTxStatsHtml += `<tr><td>${username}</td><td>${generalTxesStatsToday.data.didTxes.txes[username]}</td></tr>`;
+                    }
                 }
                 generalTxStatsHtml += `</table><br>`;
 
                 // All time
                 generalTxStatsHtml += `<table><tr><th>Request From</th><th>Numer of transactions All time</th></tr>`;
                 for (const username in generalTxesStatsAllTime.data.didTxes.txes) {
-                    generalTxStatsHtml += `<tr><td>${username}</td><td>${generalTxesStatsAllTime.data.didTxes.txes[username]}</td></tr>`;
+                    if (generalTxesStatsAllTime.data.didTxes.txes.hasOwnProperty(username)) {
+                        generalTxStatsHtml += `<tr><td>${username}</td><td>${generalTxesStatsAllTime.data.didTxes.txes[username]}</td></tr>`;
+                    }
                 }
                 generalTxStatsHtml += `</table>`;
 
