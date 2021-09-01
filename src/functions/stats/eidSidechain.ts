@@ -7,7 +7,7 @@ const NAMESPACE = 'Function: EidSidechain';
 
 async function getTxStats(network: string, beginDate: any, endDate: Date) {
     const conn = network === config.blockchain.testnet ? connTestnet : connMainnet;
-    let generalTxesStats: any = {
+    const generalTxesStats: any = {
         data: {
             didTxes: {
                 numTxes: 0,
@@ -21,7 +21,7 @@ async function getTxStats(network: string, beginDate: any, endDate: Date) {
     // Aggregate did txes
     let createdAtFilter = { $lt: endDate };
     if (beginDate !== null) {
-        let greaterThanEqualToFilter = { $gte: beginDate };
+        const greaterThanEqualToFilter = { $gte: beginDate };
         createdAtFilter = { ...createdAtFilter, ...greaterThanEqualToFilter };
     }
 
@@ -31,8 +31,8 @@ async function getTxStats(network: string, beginDate: any, endDate: Date) {
         { $project: { _id: 0, username: '$_id', count: '$count' } }
     ])
         .then((result) => {
-            for (let r of result) {
-                let numTxes = r.count;
+            for (const r of result) {
+                const numTxes = r.count;
                 generalTxesStats.data.didTxes.numTxes += numTxes;
                 generalTxesStats.data.didTxes.txes[r.username] = numTxes;
             }

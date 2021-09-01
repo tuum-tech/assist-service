@@ -17,10 +17,10 @@ const NAMESPACE = 'Controller: User';
 const validateToken = (req: Request, res: Response, next: NextFunction) => {
     logging.info(NAMESPACE, 'Token validated, user authorized.');
 
-    let network = (): string => {
+    const network = (): string => {
         let result = config.blockchain.mainnet;
         if (!req.query.network) {
-            let { network } = req.body;
+            const { network } = req.body;
             result = network ? network : config.blockchain.mainnet;
         } else {
             result = req.query.network.toString();
@@ -28,7 +28,7 @@ const validateToken = (req: Request, res: Response, next: NextFunction) => {
         return result;
     };
 
-    let data = {
+    const data = {
         message: 'Token validated'
     };
     return res.status(200).json(commonService.returnSuccess(network(), 200, data));
@@ -58,10 +58,10 @@ const register = (req: Request, res: Response, next: NextFunction) => {
             })
             .then((userExists: boolean) => {
                 if (userExists) {
-                    let error = `There already exists another user with the same username "${username}". Please choose a different username.`;
+                    const error = `There already exists another user with the same username "${username}". Please choose a different username.`;
                     return res.status(401).json(commonService.returnError(network, 401, error));
                 } else {
-                    let _user = new conn.models.User({
+                    const _user = new conn.models.User({
                         _id: new mongoose.Types.ObjectId(),
                         username,
                         password: hash,
@@ -83,7 +83,7 @@ const register = (req: Request, res: Response, next: NextFunction) => {
                     return _user
                         .save()
                         .then((user: any) => {
-                            let data = {
+                            const data = {
                                 user
                             };
                             return res.status(201).json(commonService.returnSuccess(network, 200, data));
@@ -121,8 +121,8 @@ const login = (req: Request, res: Response, next: NextFunction) => {
                         } else if (token) {
                             // We don't want to show the password during login
                             const _user = JSON.parse(JSON.stringify(user));
-                            delete _user['password'];
-                            let data = {
+                            delete _user.password;
+                            const data = {
                                 message: 'Auth successful',
                                 token,
                                 user: _user
@@ -150,7 +150,7 @@ const getAllUsers = (req: Request, res: Response, next: NextFunction) => {
         .select('-password')
         .exec()
         .then((users) => {
-            let data = {
+            const data = {
                 users,
                 count: users.length
             };
@@ -187,12 +187,12 @@ const getStats = (req: Request, res: Response, next: NextFunction) => {
     const conn = network === config.blockchain.testnet ? connTestnet : connMainnet;
 
     const dateString = req.query.created ? req.query.created.toString() : 'today';
-    let beginDate = commonFunction.getDateFromString(dateString);
+    const beginDate = commonFunction.getDateFromString(dateString);
     if (beginDate == null) {
-        let error = 'Date can only be passed in the following format: [today|yesterday|YYYY-MM-DD]';
+        const error = 'Date can only be passed in the following format: [today|yesterday|YYYY-MM-DD]';
         return res.status(500).json(commonService.returnError(network, 500, error));
     }
-    let endDate = new Date(`${beginDate.getUTCFullYear()}-${('0' + (beginDate.getUTCMonth() + 1)).slice(-2)}-${('0' + beginDate.getUTCDate()).slice(-2)}`);
+    const endDate = new Date(`${beginDate.getUTCFullYear()}-${('0' + (beginDate.getUTCMonth() + 1)).slice(-2)}-${('0' + beginDate.getUTCDate()).slice(-2)}`);
     if (dateString === 'today' || dateString === 'yesterday') {
         beginDate.setDate(beginDate.getDate() - 1);
     } else {
@@ -204,7 +204,7 @@ const getStats = (req: Request, res: Response, next: NextFunction) => {
             logging.error(NAMESPACE, 'Error while trying to get user stats: ', stats.error);
             return res.status(500).json(commonService.returnError(network, 500, stats.error));
         } else {
-            let data = stats.data;
+            const data = stats.data;
             accountFunction
                 .handleAPILimit(conn, authTokenDecoded, true)
                 .then((account) => {

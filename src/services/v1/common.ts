@@ -5,17 +5,17 @@ async function handleRoute(url: string, body: any, headers: any, post: boolean =
     if (post === true) {
         fetchResponse = await fetch(url, {
             method: 'POST',
-            headers: headers,
+            headers,
             body: JSON.stringify(body)
         });
     } else {
         fetchResponse = await fetch(url, {
             method: 'GET',
-            headers: headers
+            headers
         });
     }
 
-    let response: any = {
+    const response: any = {
         data: null,
         error: null
     };
@@ -31,7 +31,7 @@ async function handleRoute(url: string, body: any, headers: any, post: boolean =
 function returnSuccess(network: string, code: number, data: any) {
     const response = {
         meta: { code, message: 'OK', network },
-        data: data
+        data
     };
     return response;
 }
@@ -39,7 +39,7 @@ function returnSuccess(network: string, code: number, data: any) {
 function returnError(network: string, code: number, error: any) {
     const response = {
         meta: { code, message: 'ERR', network },
-        error: error
+        error
     };
 
     return response;

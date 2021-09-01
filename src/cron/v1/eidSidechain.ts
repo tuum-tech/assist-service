@@ -19,21 +19,21 @@ function publishDIDTx(network: string) {
     const rpcUrl = network === config.blockchain.testnet ? config.blockchain.eidSidechain.testnet.rpcUrl : config.blockchain.eidSidechain.mainnet.rpcUrl;
     const contractAddress = network === config.blockchain.testnet ? config.blockchain.eidSidechain.testnet.contractAddress : config.blockchain.eidSidechain.mainnet.contractAddress;
     const chainId = network === config.blockchain.testnet ? config.blockchain.eidSidechain.testnet.chainId : config.blockchain.eidSidechain.mainnet.chainId;
-    let web3 = new Web3(rpcUrl);
+    const web3 = new Web3(rpcUrl);
 
     const conn = network === config.blockchain.testnet ? connTestnet : connMainnet;
 
     rpcService
         .getBlockHeight(network)
         .then((heightResponse) => {
-            let currentHeight: number = heightResponse.data.height - 1;
+            const currentHeight: number = heightResponse.data.height - 1;
             return currentHeight;
         })
         .then((height) => {
-            let checkHeightDone = conn.models.LatestBlockchainState.findOne({ chain: config.blockchain.eidSidechain.name })
+            const checkHeightDone = conn.models.LatestBlockchainState.findOne({ chain: config.blockchain.eidSidechain.name })
                 .exec()
                 .then((state) => {
-                    let latestState =
+                    const latestState =
                         state ||
                         new conn.models.LatestBlockchainState({
                             _id: new mongoose.Types.ObjectId(),
@@ -71,11 +71,11 @@ function publishDIDTx(network: string) {
             if (!checkHeightDone) {
                 return false;
             }
-            let pendingTxDone = conn.models.DidTx.find({ status: config.txStatus.pending })
+            const pendingTxDone = conn.models.DidTx.find({ status: config.txStatus.pending })
                 .exec()
                 .then((didTxes) => {
                     didTxes.map((didTx, index) => {
-                        let wallet = config.blockchain.eidSidechain.wallets.keystores[Math.floor(Math.random() * config.blockchain.eidSidechain.wallets.keystores.length)];
+                        const wallet = config.blockchain.eidSidechain.wallets.keystores[Math.floor(Math.random() * config.blockchain.eidSidechain.wallets.keystores.length)];
                         rpcService
                             .signTx(network, wallet, JSON.stringify(didTx.didRequest), index)
                             .then((res) => {
@@ -88,10 +88,10 @@ function publishDIDTx(network: string) {
                                     };
                                     didTx.save();
                                 } else {
-                                    web3.eth.sendSignedTransaction(res.txDetails['rawTx']).on('transactionHash', (transactionHash: string) => {
+                                    web3.eth.sendSignedTransaction(res.txDetails.rawTx).on('transactionHash', (transactionHash: string) => {
                                         didTx.status = config.txStatus.processing;
                                         didTx.blockchainTxHash = transactionHash;
-                                        didTx.walletUsed = res.txDetails['walletUsed'];
+                                        didTx.walletUsed = res.txDetails.walletUsed;
                                         didTx.save();
                                     });
                                 }
@@ -118,7 +118,7 @@ function publishDIDTx(network: string) {
             if (!pendingTxDone) {
                 return false;
             }
-            let processingTxDone = conn.models.DidTx.find({ status: config.txStatus.processing })
+            const processingTxDone = conn.models.DidTx.find({ status: config.txStatus.processing })
                 .exec()
                 .then((didTxes) => {
                     didTxes.map((didTx) => {
@@ -127,7 +127,7 @@ function publishDIDTx(network: string) {
                                 return;
                             }
                             didTx.blockchainTxReceipt = receipt;
-                            if (receipt['status']) {
+                            if (receipt.status) {
                                 didTx.status = config.txStatus.completed;
                             } else {
                                 didTx.status = config.txStatus.cancelled;
@@ -162,8 +162,8 @@ async function dailyCronjob(network: string) {
         async () => {
             logging.info(NAMESPACE, `Started cronjob: dailyCronjob: ${network}`);
 
-            let beginDate = new Date();
-            let endDate = new Date(`${beginDate.getUTCFullYear()}-${('0' + (beginDate.getUTCMonth() + 1)).slice(-2)}-${('0' + beginDate.getUTCDate()).slice(-2)}`);
+            const beginDate = new Date();
+            const endDate = new Date(`${beginDate.getUTCFullYear()}-${('0' + (beginDate.getUTCMonth() + 1)).slice(-2)}-${('0' + beginDate.getUTCDate()).slice(-2)}`);
             beginDate.setDate(beginDate.getDate() - 1);
 
             const conn = network === config.blockchain.testnet ? connTestnet : connMainnet;
@@ -173,8 +173,8 @@ async function dailyCronjob(network: string) {
             // Get general user stats
             const getGeneralUserStats = async () => {
                 // Also make sure to reset the user accounts for today
-                let generalUserStatsToday = await userStats.getStats(network, beginDate, endDate, false);
-                let generalUserStatsAll = await userStats.getStats(network, null, endDate, true);
+                const generalUserStatsToday = await userStats.getStats(network, beginDate, endDate, false);
+                const generalUserStatsAll = await userStats.getStats(network, null, endDate, true);
 
                 let generalUserStatsHtml: string = `<table><tr><th></th><th>Today</th><th>All time</th></tr>`;
                 generalUserStatsHtml += `<tr><th>Number of Users</th><th>${generalUserStatsToday.data.numUsers}</th><th>${generalUserStatsAll.data.numUsers}</th></tr></table><br>`;
@@ -184,7 +184,7 @@ async function dailyCronjob(network: string) {
                 generalUserStatsHtml += `<tr><td>Premium</td><td>${generalUserStatsToday.data.premiumAPI}</td><td>${generalUserStatsAll.data.premiumAPI}</td></tr></table><br>`;
 
                 generalUserStatsHtml += `<table><tr><th>New User Today</th><th>Free Endpoints</th><th>Premium Endpoints</th></tr>`;
-                for (let username in generalUserStatsToday.data.users) {
+                for (const username in generalUserStatsToday.data.users) {
                     generalUserStatsHtml += `<tr><td>${username}</td><td>${generalUserStatsToday.data.users[username].freeAPI}</td><td>${generalUserStatsToday.data.users[username].premiumAPI}</td></tr>`;
                 }
                 generalUserStatsHtml += `</table>`;
@@ -198,9 +198,9 @@ async function dailyCronjob(network: string) {
             const getWalletStats = async () => {
                 let walletStats: string = '<table><tr><th>Address</th><th>Balance</th></tr>';
 
-                for (let keystore of config.blockchain.eidSidechain.wallets.keystores) {
-                    let address = `0x${keystore.address}`;
-                    let balance = await rpcService.getBalance(network, address).then((balanceResponse) => {
+                for (const keystore of config.blockchain.eidSidechain.wallets.keystores) {
+                    const address = `0x${keystore.address}`;
+                    const balance = await rpcService.getBalance(network, address).then((balanceResponse) => {
                         if (balanceResponse.meta.message === 'OK') {
                             return balanceResponse.data.value;
                         } else {
@@ -218,22 +218,22 @@ async function dailyCronjob(network: string) {
 
             // Get all the transaction stats
             const getGeneralTxStats = async () => {
-                let generalTxesStatsToday = await eidSidechainStats.getTxStats(network, beginDate, endDate);
+                const generalTxesStatsToday = await eidSidechainStats.getTxStats(network, beginDate, endDate);
 
-                let generalTxesStatsAllTime = await eidSidechainStats.getTxStats(network, null, endDate);
+                const generalTxesStatsAllTime = await eidSidechainStats.getTxStats(network, null, endDate);
                 let generalTxStatsHtml: string = `<table><tr><th></th><th>Today</th><th>All time</th></tr>`;
                 generalTxStatsHtml += `<tr><th>Number of Transactions</th><th>${generalTxesStatsToday.data.didTxes.numTxes}</th><th>${generalTxesStatsAllTime.data.didTxes.numTxes}</th></tr></table><br>`;
 
                 // Today
                 generalTxStatsHtml += `<table><tr><th>Request From</th><th>Numer of transactions Today</th></tr>`;
-                for (let username in generalTxesStatsToday.data.didTxes.txes) {
+                for (const username in generalTxesStatsToday.data.didTxes.txes) {
                     generalTxStatsHtml += `<tr><td>${username}</td><td>${generalTxesStatsToday.data.didTxes.txes[username]}</td></tr>`;
                 }
                 generalTxStatsHtml += `</table><br>`;
 
                 // All time
                 generalTxStatsHtml += `<table><tr><th>Request From</th><th>Numer of transactions All time</th></tr>`;
-                for (let username in generalTxesStatsAllTime.data.didTxes.txes) {
+                for (const username in generalTxesStatsAllTime.data.didTxes.txes) {
                     generalTxStatsHtml += `<tr><td>${username}</td><td>${generalTxesStatsAllTime.data.didTxes.txes[username]}</td></tr>`;
                 }
                 generalTxStatsHtml += `</table>`;
@@ -245,7 +245,7 @@ async function dailyCronjob(network: string) {
 
             // Get all the outlier transactions
             const getOutlierTxesToday = async () => {
-                let outlierDidTxesToday: any = {
+                const outlierDidTxesToday: any = {
                     numTxes: 0,
                     txes: []
                 };
@@ -279,7 +279,7 @@ async function dailyCronjob(network: string) {
 
             // ---------------------------------------------------------------------------------------
 
-            let htmlContent: string = `
+            const htmlContent: string = `
         <!DOCTYPE html>
         <html>
             <head>
@@ -301,7 +301,7 @@ async function dailyCronjob(network: string) {
                     }
                 </style>
             </head>
-            <body>          
+            <body>
                 <h2>Wallets and Current Balances</h2>
                 ${await getWalletStats()}
                 <h2>General User Stats</h2>

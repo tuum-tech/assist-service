@@ -1,15 +1,16 @@
 import dotenv from 'dotenv';
+import mongoose from 'mongoose';
 
 dotenv.config();
 
-const SERVER_TOKEN_EXPIRETIME = process.env.SERVER_TOKEN_EXPIRETIME || 3600;
+const SERVER_TOKEN_EXPIRETIME = Number(process.env.SERVER_TOKEN_EXPIRETIME) || 3600;
 const SERVER_TOKEN_ISSUER = process.env.SERVER_TOKEN_ISSUER || 'did:elastos:iag8qwq1xPBpLsGv4zR4CmzLpLUkBNfPHX';
 const SERVER_TOKEN_SECRET = process.env.SERVER_TOKEN_SECRET || 'assist-service-key';
 
 const SERVER = {
     hostname: '0.0.0.0',
-    port: process.env.SERVER_PORT || 2000,
-    production: process.env.PRODUCTION || false,
+    port: Number(process.env.SERVER_PORT) || 3000,
+    production: JSON.parse((process.env.PRODUCTION || 'false').toLowerCase()),
     token: {
         expireTime: SERVER_TOKEN_EXPIRETIME,
         issuer: SERVER_TOKEN_ISSUER,
@@ -17,30 +18,36 @@ const SERVER = {
     }
 };
 
-const MONGO_OPTIONS = {
+const MONGO_OPTIONS: mongoose.ConnectOptions = {
     useUnifiedTopology: true,
     useNewUrlParser: true,
     socketTimeoutMS: 30000,
     keepAlive: true,
     poolSize: 25,
     autoIndex: false,
-    retryWrites: SERVER.production === true ? true : false,
     authSource: 'admin',
     writeConcern: 'majority'
 };
 
 const MONGO_USERNAME = process.env.MONGO_USERNAME || 'mongoadmin';
 const MONGO_PASSWORD = process.env.MONGO_PASSWORD || 'mongopass';
-const MONGO_HOST_MAINNET = `${process.env.MONGO_HOST}:${process.env.MONGO_PORT}/assist-service-mainnet` || 'localhost:37018/assist-service-mainnet';
-const MONGO_HOST_TESTNET = `${process.env.MONGO_HOST}:${process.env.MONGO_PORT}/assist-service-testnet` || 'localhost:37018/assist-service-testnet';
-
+const MONGO_HOST = process.env.MONGO_HOST || 'localhost';
+const MONGO_PORT = Number(process.env.MONGO_PORT) || 37018;
+const MONGO_DATABASE_MAINNET = 'assist-service-mainnet';
+const MONGO_DATABASE_TESTNET = 'assist-service-testnet';
 const MONGO = {
     options: MONGO_OPTIONS,
     mainnet: {
-        url: SERVER.production === true ? `mongodb+srv://${MONGO_USERNAME}:${MONGO_PASSWORD}@${MONGO_HOST_MAINNET}` : `mongodb://${MONGO_USERNAME}:${MONGO_PASSWORD}@${MONGO_HOST_MAINNET}`
+        url:
+            SERVER.production === true
+                ? `mongodb+srv://${MONGO_USERNAME}:${MONGO_PASSWORD}@${MONGO_HOST}/${MONGO_DATABASE_MAINNET}`
+                : `mongodb://${MONGO_USERNAME}:${MONGO_PASSWORD}@${MONGO_HOST}:${MONGO_PORT}/${MONGO_DATABASE_MAINNET}`
     },
     testnet: {
-        url: SERVER.production === true ? `mongodb+srv://${MONGO_USERNAME}:${MONGO_PASSWORD}@${MONGO_HOST_TESTNET}` : `mongodb://${MONGO_USERNAME}:${MONGO_PASSWORD}@${MONGO_HOST_TESTNET}`
+        url:
+            SERVER.production === true
+                ? `mongodb+srv://${MONGO_USERNAME}:${MONGO_PASSWORD}@${MONGO_HOST}/${MONGO_DATABASE_TESTNET}`
+                : `mongodb://${MONGO_USERNAME}:${MONGO_PASSWORD}@${MONGO_HOST}:${MONGO_PORT}/${MONGO_DATABASE_TESTNET}`
     }
 };
 
@@ -97,7 +104,7 @@ const SMTP_CREDS = {
     smtpUser: process.env.EMAIL_SMTP_USERNAME || 'support@example.com',
     smtpPass: process.env.EMAIL_SMTP_PASSWORD || 'password',
     smtpPort: Number(process.env.EMAIL_SMTP_PORT) || 587,
-    smtpTls: Boolean(process.env.EMAIL_SMTP_TLS) || false
+    smtpTls: JSON.parse((process.env.EMAIL_SMTP_TLS || 'false').toLowerCase())
 };
 
 const config = {

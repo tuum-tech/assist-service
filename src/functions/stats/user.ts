@@ -7,7 +7,7 @@ const NAMESPACE = 'Function: User';
 
 async function getStats(network: string, beginDate: any, endDate: Date, reset: boolean = false) {
     const conn = network === config.blockchain.testnet ? connTestnet : connMainnet;
-    let generalUserStats: any = {
+    const generalUserStats: any = {
         data: {
             freeAPI: 0,
             premiumAPI: 0,
@@ -20,7 +20,7 @@ async function getStats(network: string, beginDate: any, endDate: Date, reset: b
     // Aggregate users info
     let createdAtFilter = { $lt: endDate };
     if (beginDate !== null) {
-        let greaterThanEqualToFilter = { $gte: beginDate };
+        const greaterThanEqualToFilter = { $gte: beginDate };
         createdAtFilter = { ...createdAtFilter, ...greaterThanEqualToFilter };
     }
 
@@ -29,8 +29,8 @@ async function getStats(network: string, beginDate: any, endDate: Date, reset: b
         .exec()
         .then((users) => {
             users.map((user) => {
-                let freeAPICountAll = user.requests.freeEndpoints.all;
-                let premiumAPICountAll = user.requests.premiumEndpoints.all;
+                const freeAPICountAll = user.requests.freeEndpoints.all;
+                const premiumAPICountAll = user.requests.premiumEndpoints.all;
                 generalUserStats.data.freeAPI += freeAPICountAll;
                 generalUserStats.data.premiumAPI += premiumAPICountAll;
                 generalUserStats.data.numUsers += 1;

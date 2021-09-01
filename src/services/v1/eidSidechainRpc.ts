@@ -46,18 +46,18 @@ async function signTx(network: string, wallet: any, payload: string, index: numb
         error: null
     };
     try {
-        let web3 = new Web3(rpcUrl);
-        let contract = new web3.eth.Contract(PUBLISH_CONTRACT_ABI, contractAddress);
+        const web3 = new Web3(rpcUrl);
+        const contract = new web3.eth.Contract(PUBLISH_CONTRACT_ABI, contractAddress);
 
         const account = web3.eth.accounts.decrypt(wallet, config.blockchain.eidSidechain.wallets.pass);
-        const walletAddress = web3.utils.toChecksumAddress(account['address']);
+        const walletAddress = web3.utils.toChecksumAddress(account.address);
         res.walletUsed = walletAddress;
-        const privateKey = account['privateKey'];
+        const privateKey = account.privateKey;
 
-        let data = contract.methods.publishDidTransaction(payload).encodeABI();
+        const data = contract.methods.publishDidTransaction(payload).encodeABI();
         // We're adding index to the nonce so we can keep on sending transactions to the blockchain one after another
         // just by increasing the nonce
-        let nonce: any = await web3.eth.getTransactionCount(walletAddress).then((n: any) => {
+        const nonce: any = await web3.eth.getTransactionCount(walletAddress).then((n: any) => {
             return n + index;
         });
         let gas = 1000000;
@@ -70,9 +70,9 @@ async function signTx(network: string, wallet: any, payload: string, index: numb
         } catch (error) {
             logging.info(NAMESPACE, 'Error while trying to estimate gas:', error);
         }
-        let gasPrice = await web3.eth.getGasPrice();
+        const gasPrice = await web3.eth.getGasPrice();
 
-        let to = web3.utils.toChecksumAddress(contractAddress);
+        const to = web3.utils.toChecksumAddress(contractAddress);
 
         const tx = {
             nonce,
@@ -83,10 +83,10 @@ async function signTx(network: string, wallet: any, payload: string, index: numb
             chainId
         };
 
-        let signedTx: any = await web3.eth.accounts.signTransaction(tx, privateKey).then((result: any) => {
+        const signedTx: any = await web3.eth.accounts.signTransaction(tx, privateKey).then((result: any) => {
             return result;
         });
-        res.txDetails.rawTx = signedTx['rawTransaction'];
+        res.txDetails.rawTx = signedTx.rawTransaction;
     } catch (err) {
         logging.info(NAMESPACE, 'Error while trying to sign the DID transaction:', err);
         res.error = err;
@@ -97,12 +97,12 @@ async function signTx(network: string, wallet: any, payload: string, index: numb
 
 async function getBlockHeight(network: string) {
     const rpcUrl = network === config.blockchain.mainnet ? config.blockchain.eidSidechain.mainnet.rpcUrl : config.blockchain.eidSidechain.testnet.rpcUrl;
-    let web3 = new Web3(rpcUrl);
+    const web3 = new Web3(rpcUrl);
     const res: any = await web3.eth
         .getBlockNumber()
         .then((height: any) => {
             if (height) {
-                let data = {
+                const data = {
                     height
                 };
                 return commonService.returnSuccess(network, 200, data);
@@ -120,12 +120,12 @@ async function getBlockHeight(network: string) {
 
 async function getBalance(network: string, address: string) {
     const rpcUrl = network === config.blockchain.mainnet ? config.blockchain.eidSidechain.mainnet.rpcUrl : config.blockchain.eidSidechain.testnet.rpcUrl;
-    let web3 = new Web3(rpcUrl);
+    const web3 = new Web3(rpcUrl);
     const res: any = await web3.eth
         .getBalance(web3.utils.toChecksumAddress(address))
         .then((value: any) => {
             if (value) {
-                let data = {
+                const data = {
                     value: Number(web3.utils.fromWei(value))
                 };
                 return commonService.returnSuccess(network, 200, data);
