@@ -169,32 +169,6 @@ async function dailyCronjob(network: string) {
 
             // ---------------------------------------------------------------------------------------
 
-            // Get general user stats
-            const getGeneralUserStats = async () => {
-                // Also make sure to reset the user accounts for today
-                const generalUserStatsToday = await userStats.getStats(network, beginDate, endDate, false);
-                const generalUserStatsAll = await userStats.getStats(network, null, endDate, true);
-
-                let generalUserStatsHtml: string = `<table><tr><th></th><th>Today</th><th>All time</th></tr>`;
-                generalUserStatsHtml += `<tr><th>Number of Users</th><th>${generalUserStatsToday.data.numUsers}</th><th>${generalUserStatsAll.data.numUsers}</th></tr></table><br>`;
-
-                generalUserStatsHtml += `<table><tr><th>Endpoint Type</th><th>Today</th><th>All time</th></tr>`;
-                generalUserStatsHtml += `<tr><td>Free</td><td>${generalUserStatsToday.data.freeAPI}</td><td>${generalUserStatsAll.data.freeAPI}</td></tr>`;
-                generalUserStatsHtml += `<tr><td>Premium</td><td>${generalUserStatsToday.data.premiumAPI}</td><td>${generalUserStatsAll.data.premiumAPI}</td></tr></table><br>`;
-
-                generalUserStatsHtml += `<table><tr><th>New User Today</th><th>Free Endpoints</th><th>Premium Endpoints</th></tr>`;
-                for (const username in generalUserStatsToday.data.users) {
-                    if (generalUserStatsToday.data.users.hasOwnProperty(username)) {
-                        generalUserStatsHtml += `<tr><td>${username}</td><td>${generalUserStatsToday.data.users[username].freeAPI}</td><td>${generalUserStatsToday.data.users[username].premiumAPI}</td></tr>`;
-                    }
-                }
-                generalUserStatsHtml += `</table>`;
-
-                return generalUserStatsHtml;
-            };
-
-            // ---------------------------------------------------------------------------------------
-
             // Get wallet stats
             const getWalletStats = async () => {
                 let walletStats: string = '<table><tr><th>Address</th><th>Balance</th></tr>';
@@ -244,6 +218,32 @@ async function dailyCronjob(network: string) {
                 generalTxStatsHtml += `</table>`;
 
                 return generalTxStatsHtml;
+            };
+
+            // ---------------------------------------------------------------------------------------
+
+            // Get general user stats
+            const getGeneralUserStats = async () => {
+                // Also make sure to reset the user accounts for today
+                const generalUserStatsToday = await userStats.getStats(network, beginDate, endDate, false);
+                const generalUserStatsAll = await userStats.getStats(network, null, endDate, true);
+
+                let generalUserStatsHtml: string = `<table><tr><th></th><th>Today</th><th>All time</th></tr>`;
+                generalUserStatsHtml += `<tr><th>Number of Users</th><th>${generalUserStatsToday.data.numUsers}</th><th>${generalUserStatsAll.data.numUsers}</th></tr></table><br>`;
+
+                generalUserStatsHtml += `<table><tr><th>Endpoint Type</th><th>Today</th><th>All time</th></tr>`;
+                generalUserStatsHtml += `<tr><td>Free</td><td>${generalUserStatsToday.data.freeAPI}</td><td>${generalUserStatsAll.data.freeAPI}</td></tr>`;
+                generalUserStatsHtml += `<tr><td>Premium</td><td>${generalUserStatsToday.data.premiumAPI}</td><td>${generalUserStatsAll.data.premiumAPI}</td></tr></table><br>`;
+
+                generalUserStatsHtml += `<table><tr><th>New User Today</th><th>Free Endpoints</th><th>Premium Endpoints</th></tr>`;
+                for (const username in generalUserStatsToday.data.users) {
+                    if (generalUserStatsToday.data.users.hasOwnProperty(username)) {
+                        generalUserStatsHtml += `<tr><td>${username}</td><td>${generalUserStatsToday.data.users[username].freeAPI}</td><td>${generalUserStatsToday.data.users[username].premiumAPI}</td></tr>`;
+                    }
+                }
+                generalUserStatsHtml += `</table>`;
+
+                return generalUserStatsHtml;
             };
 
             // ---------------------------------------------------------------------------------------
@@ -309,10 +309,10 @@ async function dailyCronjob(network: string) {
             <body>
                 <h2>Wallets and Current Balances</h2>
                 ${await getWalletStats()}
-                <h2>General User Stats</h2>
-                ${await getGeneralUserStats()}
                 <h2>Transactions</h2>
                 ${await getGeneralTxStats()}
+                <h2>General User Stats</h2>
+                ${await getGeneralUserStats()}
                 <h2>Outlier Transactions Today</h2>
                 ${await getOutlierTxesToday()}
             </body>
