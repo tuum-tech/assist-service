@@ -20,6 +20,7 @@ const createDIDTx = (req: Request, res: Response, next: NextFunction) => {
     const { didRequest, memo } = req.body;
     let { network } = req.body;
     network = network ? network : config.blockchain.mainnet;
+    if (!config.blockchain.validNetworks.includes(network)) network = config.blockchain.mainnet;
     let did: any = null;
     try {
         let didRequestPayload = didRequest.payload;
@@ -113,7 +114,9 @@ const createDIDTx = (req: Request, res: Response, next: NextFunction) => {
 const getAllDIDTxes = (req: Request, res: Response, next: NextFunction) => {
     const authTokenDecoded = res.locals.jwt;
 
-    const network = req.query.network ? req.query.network.toString() : config.blockchain.mainnet;
+    let network = req.query.network ? req.query.network.toString() : config.blockchain.mainnet;
+    if (!config.blockchain.validNetworks.includes(network)) network = config.blockchain.mainnet;
+
     const conn = network === config.blockchain.testnet ? connTestnet : connMainnet;
 
     const result: any = conn.models.DidTx.find()
@@ -160,7 +163,9 @@ const getDIDTxFromConfirmationId = (req: Request, res: Response, next: NextFunct
     const authTokenDecoded = res.locals.jwt;
 
     const _id = req.params.confirmationId;
-    const network = req.query.network ? req.query.network.toString() : config.blockchain.mainnet;
+    let network = req.query.network ? req.query.network.toString() : config.blockchain.mainnet;
+    if (!config.blockchain.validNetworks.includes(network)) network = config.blockchain.mainnet;
+
     const conn = network === config.blockchain.testnet ? connTestnet : connMainnet;
 
     const result: any = conn.models.DidTx.findOne({ _id })
@@ -205,7 +210,9 @@ const getDIDTxFromConfirmationId = (req: Request, res: Response, next: NextFunct
 const getDIDTxStats = (req: Request, res: Response, next: NextFunction) => {
     const authTokenDecoded = res.locals.jwt;
 
-    const network = req.query.network ? req.query.network.toString() : config.blockchain.mainnet;
+    let network = req.query.network ? req.query.network.toString() : config.blockchain.mainnet;
+    if (!config.blockchain.validNetworks.includes(network)) network = config.blockchain.mainnet;
+
     const conn = network === config.blockchain.testnet ? connTestnet : connMainnet;
 
     const dateString = req.query.created ? req.query.created.toString() : 'today';

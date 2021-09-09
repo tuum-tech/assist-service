@@ -61,6 +61,7 @@ router.use((req, res, next) => {
         } else {
             result = req.query.network.toString();
         }
+        if (!config.blockchain.validNetworks.includes(result)) result = config.blockchain.mainnet;
         return result;
     };
 

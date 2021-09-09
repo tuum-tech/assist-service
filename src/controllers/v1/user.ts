@@ -11,11 +11,14 @@ import userStats from '../../functions/stats/user';
 import commonFunction from '../../functions/common';
 import commonService from '../../services/v1/common';
 import IUser from '../../interfaces/user';
+import jwtDecode, { JwtPayload } from 'jwt-decode';
 
 const NAMESPACE = 'Controller: User';
 
 const validateToken = (req: Request, res: Response, next: NextFunction) => {
     logging.info(NAMESPACE, 'Token validated, user authorized.');
+
+    const token: string = req.headers.authorization?.split(' ')[1] || '';
 
     const getNetwork = (): string => {
         let result = config.blockchain.mainnet;
@@ -25,12 +28,22 @@ const validateToken = (req: Request, res: Response, next: NextFunction) => {
         } else {
             result = req.query.network.toString();
         }
+        if (!config.blockchain.validNetworks.includes(result)) result = config.blockchain.mainnet;
         return result;
     };
 
+    const decoded: any = jwtDecode<JwtPayload>(token);
+
     const data = {
-        message: 'Token validated'
+        message: 'Token validated',
+        decoded: {
+            username: decoded.username,
+            issuedDate: new Date(decoded.iat * 1000),
+            expirationDate: new Date(decoded.exp * 1000),
+            issuer: decoded.iss
+        }
     };
+
     return res.status(200).json(commonService.returnSuccess(getNetwork(), 200, data));
 };
 
@@ -39,6 +52,7 @@ const register = (req: Request, res: Response, next: NextFunction) => {
     let { network } = req.body;
 
     network = network ? network : config.blockchain.mainnet;
+    if (!config.blockchain.validNetworks.includes(network)) network = config.blockchain.mainnet;
 
     bcryptjs.hash(password, 10, (hashError, hash) => {
         if (hashError) {
@@ -104,6 +118,7 @@ const login = (req: Request, res: Response, next: NextFunction) => {
     let { network } = req.body;
 
     network = network ? network : config.blockchain.mainnet;
+    if (!config.blockchain.validNetworks.includes(network)) network = config.blockchain.mainnet;
 
     const conn = network === config.blockchain.testnet ? connTestnet : connMainnet;
     conn.models.User.findOne({ username })
@@ -145,7 +160,9 @@ const login = (req: Request, res: Response, next: NextFunction) => {
 const getAllUsers = (req: Request, res: Response, next: NextFunction) => {
     const authTokenDecoded = res.locals.jwt;
 
-    const network = req.query.network ? req.query.network.toString() : config.blockchain.mainnet;
+    let network = req.query.network ? req.query.network.toString() : config.blockchain.mainnet;
+    if (!config.blockchain.validNetworks.includes(network)) network = config.blockchain.mainnet;
+
     const conn = network === config.blockchain.testnet ? connTestnet : connMainnet;
 
     const result: any = conn.models.User.find()
@@ -185,7 +202,9 @@ const getAllUsers = (req: Request, res: Response, next: NextFunction) => {
 const getStats = (req: Request, res: Response, next: NextFunction) => {
     const authTokenDecoded = res.locals.jwt;
 
-    const network = req.query.network ? req.query.network.toString() : config.blockchain.mainnet;
+    let network = req.query.network ? req.query.network.toString() : config.blockchain.mainnet;
+    if (!config.blockchain.validNetworks.includes(network)) network = config.blockchain.mainnet;
+
     const conn = network === config.blockchain.testnet ? connTestnet : connMainnet;
 
     const dateString = req.query.created ? req.query.created.toString() : 'today';

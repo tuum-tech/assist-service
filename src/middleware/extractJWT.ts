@@ -17,6 +17,7 @@ const extractJWT = (req: Request, res: Response, next: NextFunction) => {
         } else {
             result = req.query.network.toString();
         }
+        if (!config.blockchain.validNetworks.includes(result)) result = config.blockchain.mainnet;
         return result;
     };
 

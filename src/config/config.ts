@@ -88,6 +88,7 @@ const BLOCKCHAIN = {
     mainnet: 'mainnet',
     testnet: 'testnet',
     tuumnet: 'tuumnet',
+    validNetworks: ['mainnet', 'testnet'],
     eidSidechain: EID_SIDECHAIN
 };
 

@@ -107,7 +107,7 @@ Return:
 ### Validate an Auth token
 
 ```bash
-token="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6ImtpcmFuIiwiaWF0IjoxNjI3NDM3MTU0LCJleHAiOjMyNTUyMzQzMDgsImlzcyI6ImRpZDplbGFzdG9zOmlhZzhxd3ExeFBCcExzR3Y0elI0Q216THBMVWtCTmZQSFgifQ.ADV-kIJIN4XofMdQSAT_zMq47g0bEWlc4GAMu3pNEGs";
+token="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6ImtpcmFuIiwiaWF0IjoxNjMwMzUwODI2LCJleHAiOjMyNjEwNjE2NTIsImlzcyI6ImRpZDplbGFzdG9zOmlhZzhxd3ExeFBCcExzR3Y0elI0Q216THBMVWtCTmZQSFgifQ.meX4soGF0s_ugAo-c2tZeQOKTvILJj-ZhZBeXqG5_RQ";
 curl http://localhost:2000/v1/users/validate -H "Authorization: Bearer ${token}"
 ```
 
