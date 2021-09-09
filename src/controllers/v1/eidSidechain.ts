@@ -14,7 +14,7 @@ import IUser from '../../interfaces/user';
 
 const NAMESPACE = 'Controller: EID Sidechain';
 
-const createDIDTx = (req: Request, res: Response, next: NextFunction) => {
+const publishDIDTx = (req: Request, res: Response, next: NextFunction) => {
     const authTokenDecoded = res.locals.jwt;
 
     const { didRequest, memo } = req.body;
@@ -258,7 +258,7 @@ const getDIDTxStats = (req: Request, res: Response, next: NextFunction) => {
 };
 
 export default {
-    createDIDTx,
+    publishDIDTx,
     getAllDIDTxes,
     getDIDTxFromConfirmationId,
     getDIDTxStats

@@ -199,7 +199,7 @@ const getAllUsers = (req: Request, res: Response, next: NextFunction) => {
     return result;
 };
 
-const getStats = (req: Request, res: Response, next: NextFunction) => {
+const getNewUserStats = (req: Request, res: Response, next: NextFunction) => {
     const authTokenDecoded = res.locals.jwt;
 
     let network = req.query.network ? req.query.network.toString() : config.blockchain.mainnet;
@@ -249,4 +249,4 @@ const getStats = (req: Request, res: Response, next: NextFunction) => {
     return result;
 };
 
-export default { validateToken, register, login, getAllUsers, getStats };
+export default { validateToken, register, login, getAllUsers, getNewUserStats };
