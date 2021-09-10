@@ -3,10 +3,12 @@ import express from 'express';
 import logging from './config/logging';
 import config from './config/config';
 import cronEIDSidechain from './cron/v1/eidSidechain';
+import cronESCSidechain from './cron/v1/escSidechain';
 import cronELAMainchain from './cron/v1/elaMainchain';
 import healthCheckRoutes from './routes/v1/healthCheck';
 import authRoutes from './routes/v1/user';
 import eidSidechainRoutes from './routes/v1/eidSidechain';
+import escSidechainRoutes from './routes/v1/escSidechain';
 import elaMainchainRoutes from './routes/v1/elaMainchain';
 import commonService from './services/v1/common';
 
@@ -49,7 +51,7 @@ router.use('/v1/elaMainchain', elaMainchainRoutes);
 /** EID Sidechain Routes */
 router.use('/v1/eidSidechain', eidSidechainRoutes);
 /** ESC Sidechain Routes */
-// TODO:
+router.use('/v1/escSidechain', escSidechainRoutes);
 
 /** Error handling */
 router.use((req, res, next) => {
@@ -77,6 +79,10 @@ router.listen(config.server.port, () => {
     cronEIDSidechain.dailyCronjob(config.blockchain.testnet);
     cronEIDSidechain.publishDIDTx(config.blockchain.mainnet);
     cronEIDSidechain.publishDIDTx(config.blockchain.testnet);
+
+    cronESCSidechain.setLatestBlockInfo(config.blockchain.mainnet);
+    cronESCSidechain.setLatestBlockInfo(config.blockchain.testnet);
+
     cronELAMainchain.setLatestBlockInfo(config.blockchain.mainnet);
     cronELAMainchain.setLatestBlockInfo(config.blockchain.testnet);
 });

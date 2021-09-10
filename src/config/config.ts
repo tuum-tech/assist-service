@@ -98,15 +98,17 @@ const ESC_SIDECHAIN = {
         rpcUrl: 'https://api.elastos.io/eth',
         backupRpcUrl: 'https://api.trinity-tech.cn/eth',
         chainId: 20,
-        depositAddress: 'XPsgiVQC3WucBYDL2DmPixj74Aa9aG3et8',
-        withdrawContractAddress: '0x762a042b8B9f9f0d3179e992d965c11785219599'
+        genesisBlockHash: '0x6afc2eb01956dfe192dc4cd065efdf6c3c80448776ca367a7246d279e228ff0a',
+        depositAddress: 'XVbCTM7vqM1qHKsABSFH4xKN1qbp7ijpWf',
+        withdrawContractAddress: '0xC445f9487bF570fF508eA9Ac320b59730e81e503'
     },
     testnet: {
         rpcUrl: 'https://api-testnet.elastos.io/eth',
         backupRpcUrl: 'https://api-testnet.trinity-tech.cn/eth',
         chainId: 21,
-        depositAddress: 'XPsgiVQC3WucBYDL2DmPixj74Aa9aG3et8',
-        withdrawContractAddress: '0x762a042b8B9f9f0d3179e992d965c11785219599'
+        genesisBlockHash: '0x698e5ec133064dabb7c42eb4b2bdfa21e7b7c2326b0b719d5ab7f452ae8f5ee4',
+        depositAddress: 'XWCiyXM1bQyGTawoaYKx9PjRkMUGGocWub',
+        withdrawContractAddress: '0x491bC043672B9286fA02FA7e0d6A3E5A0384A31A'
     },
     wallets: EID_SIDECHAIN_WALLETS
 };

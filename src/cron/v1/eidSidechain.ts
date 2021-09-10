@@ -43,16 +43,7 @@ function publishDIDTx(network: string) {
                         new conn.models.LatestBlockchainState({
                             _id: new mongoose.Types.ObjectId(),
                             chain: config.blockchain.eidSidechain.name,
-                            network,
-                            extraInfo: {
-                                rpcUrl,
-                                backupRpcUrl,
-                                chainId,
-                                genesisBlockHash,
-                                depositAddress,
-                                withdrawContractAddress,
-                                didContractAddress
-                            }
+                            network
                         });
                     web3.eth
                         .getBlock(height)
@@ -62,6 +53,28 @@ function publishDIDTx(network: string) {
                         .then((block: any) => {
                             latestState.height = height;
                             latestState.block = block;
+                            latestState.miner = 'TBD';
+                            latestState.validator = {
+                                name: 'TBD',
+                                rank: Infinity,
+                                ownerKey: 'TBD',
+                                nodeKey: 'TBD',
+                                location: 'TBD',
+                                url: 'TBD',
+                                ip: 'TBD'
+                            };
+                            latestState.avgTxHourly = Infinity;
+                            latestState.accountsOverOneELA = Infinity;
+                            latestState.numTx = block.transactions.length;
+                            latestState.extraInfo = {
+                                rpcUrl,
+                                backupRpcUrl,
+                                chainId,
+                                genesisBlockHash,
+                                depositAddress,
+                                withdrawContractAddress,
+                                didContractAddress
+                            };
                             latestState.save();
                         })
                         .catch((err: any) => {

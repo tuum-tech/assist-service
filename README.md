@@ -65,6 +65,10 @@ Read more on [User Data APIs](./docs/user_data.md)
 
 Read more on [Elastos ID Sidechain APIs](./docs/eid_sidechain.md)
 
+## Elastos Smart Contract Sidechain
+
+Read more on [Elastos Smart Contract Sidechain APIs](./docs/esc_sidechain.md)
+
 ## Elastos Mainchain
 
 Read more on [Elastos Mainchain APIs](./docs/ela_mainchain.md)

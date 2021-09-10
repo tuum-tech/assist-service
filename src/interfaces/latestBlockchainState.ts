@@ -16,6 +16,9 @@ export default interface ILatestBlockchainState extends Document {
     height: number;
     miner: string;
     validator: IValidator;
+    avgTxHourly: number;
+    accountsOverOneELA: number;
+    hashrate: string;
     numTx: number;
     block: object;
     extraInfo: object;

@@ -1,86 +1,125 @@
 ### Retrieve the latest block info
 
+Get the latest block info from the ELA mainchain
+
 ```bash
-curl -XPOST http://localhost:8000/v1/mainchain/latest_block_info -H "Authorization: api_key $api_key" -H "Content-Type: application/json" -d @- << EOF
-{
-  "network": "mainnet"
-}
-EOF
+token="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6ImtpcmFuIiwiaWF0IjoxNjMwMzUwODI2LCJleHAiOjMyNjEwNjE2NTIsImlzcyI6ImRpZDplbGFzdG9zOmlhZzhxd3ExeFBCcExzR3Y0elI0Q216THBMVWtCTmZQSFgifQ.meX4soGF0s_ugAo-c2tZeQOKTvILJj-ZhZBeXqG5_RQ";
+curl http://localhost:2000/v1/elaMainchain/get/blockInfo/latest?network=mainnet -H "Authorization: Bearer ${token}"
 ```
 
 ```yaml
-Request type: POST
-Url: /v1/mainchain/latest_block_info
-Authorization: 'api_key 38b8c2c1093dd0fec383a9d9ac940515'
-Content-Type: 'application/json'
-Data: { 'network': 'mainnet|testnet|tuumnet' }
+Request type: GET
+Url: /v1/elaMainchain/get/blockInfo/latest?network=[mainnet|testnet]
+Authorization: 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9'
 Return:
     Success:
-        {
-            '_status': 'OK',
-            'miner': 'F2Pool',
-            'validator': 'Noderators - Watermelon',
-            'avg_tx_hourly': 84,
-            'accounts_over_1_ELA': 26247,
-            'num_tx': 1,
-            'hashrate': '27618978773646499814',
-            'hashrate_btc': '127618978773646499814',
-            'hash': '3893390c9fe372eab5b356a02c54d3baa41fc48918bbddfbac78cf48564d9d72',
-            'confirmations': 2,
-            'size': 498,
-            'weight': 1992,
-            'height': 905345,
-            'version': 0,
-            'versionhex': '00000000',
-            'merkleroot': '764691821f937fd566bcf533611a5e5b193008ea1ba1396f67b7b0da22717c02',
-            'tx':
-                [
+    {
+        "meta": {
+            "code": 200,
+            "message": "OK",
+            "network": "mainnet"
+        },
+        "data": {
+            "_id": "613ab820577b6cfd3755c7f1",
+            "chain": "elaMainchain",
+            "network": "mainnet",
+            "extraInfo": {
+                "rpcUrl": "https://api.elastos.io/ela",
+                "backupRpcUrl": "https://api.trinity-tech.cn/ela"
+            },
+            "height": 987997,
+            "miner": "F2Pool",
+            "validator": "Noderators - Watermelon",
+            "avgTxHourly": 84,
+            "accountsOverOneELA": 26247,
+            "hashrate": "27618978773646499814",
+            "numTx": 1,
+            "block": {
+                "hash": "8a5af3561783871b5504c55c17da79c60275c2de70f497ab0c135d27a3153ebb",
+                "confirmations": 1,
+                "strippedsize": 3781,
+                "size": 3781,
+                "weight": 15124,
+                "height": 987997,
+                "version": 0,
+                "versionhex": "00000000",
+                "merkleroot": "ecf2c0f73a88e6629b73d677f9dec1929d482b4c9b4392b9137620e211f1979d",
+                "tx": [
                     {
-                        'txid': '219184ea3c0a2973b90b8402c8405b76d7fbe10a268f6de7e4f48e93f5d03df7',
-                        'hash': '219184ea3c0a2973b90b8402c8405b76d7fbe10a268f6de7e4f48e93f5d03df7',
-                        'size': 192,
-                        'vsize': 192,
-                        'version': 0,
-                        'locktime': 2001,
-                        'vin': [{ 'txid': '0000000000000000000000000000000000000000000000000000000000000000', 'vout': 65535, 'sequence': 4294967295 }],
-                        'vout':
-                            [
-                                {
-                                    'value': '0.01255707',
-                                    'n': 0,
-                                    'address': '8VYXVxKKSAxkmRrfmGpQR2Kc66XhG6m3ta',
-                                    'assetid': 'b037db964a231458d2d6ffd5ea18944c4f90e63d547c5d3b9874df66a4ead0a3',
-                                    'outputlock': 0
-                                },
-                                {
-                                    'value': '0.02929985',
-                                    'n': 1,
-                                    'address': 'EXca4DJwqCXa6vbJmpovwatHiP8HRTVS1Z',
-                                    'assetid': 'b037db964a231458d2d6ffd5ea18944c4f90e63d547c5d3b9874df66a4ead0a3',
-                                    'outputlock': 0
-                                }
-                            ],
-                        'blockhash': '3ca6bcc86bada4642fea709731f1653bd34b28ab15b790e102e14e0d7bd138d8',
-                        'confirmations': 1,
-                        'time': 1527324355,
-                        'blocktime': 1527324355,
-                        'type': 0,
-                        'payloadversion': 4,
-                        'payload': { 'CoinbaseData': 'ELA' },
-                        'attributes': [{ 'usage': 0, 'data': '46444170b0e427d2' }],
-                        'programs': []
+                        "txid": "028c01fb3059c56aea0b7a13615a7803870648f1058ab0144be90394be1ac98c",
+                        "hash": "028c01fb3059c56aea0b7a13615a7803870648f1058ab0144be90394be1ac98c",
+                        "size": 196,
+                        "vsize": 196,
+                        "version": 9,
+                        "type": 0,
+                        "payloadversion": 4,
+                        "payload": {
+                            "coinbasedata": "🐟"
+                        },
+                        "attributes": [
+                            {
+                                "usage": 0,
+                                "data": "f78b4bdca2663f89"
+                            }
+                        ],
+                        "vin": [
+                            {
+                                "txid": "0000000000000000000000000000000000000000000000000000000000000000",
+                                "vout": 65535,
+                                "sequence": 4294967295
+                            }
+                        ],
+                        "vout": [
+                            {
+                                "value": "0.91339381",
+                                "n": 0,
+                                "address": "CRASSETSXXXXXXXXXXXXXXXXXXXX2qDX5J",
+                                "assetid": "a3d0eaa466df74983b5d7c543de6904f4c9418ead5ffd6d25814234a96db37b0",
+                                "outputlock": 0,
+                                "type": 0
+                            },
+                            {
+                                "value": "1.06562610",
+                                "n": 1,
+                                "address": "EVNwKGtBffffrjYwcqdvLMTiXVeLniQ3Bc",
+                                "assetid": "a3d0eaa466df74983b5d7c543de6904f4c9418ead5ffd6d25814234a96db37b0",
+                                "outputlock": 0,
+                                "type": 0
+                            }
+                        ],
+                        "locktime": 987997,
+                        "programs": [],
+                        "blockhash": "8a5af3561783871b5504c55c17da79c60275c2de70f497ab0c135d27a3153ebb",
+                        "confirmations": 1,
+                        "time": 1631304734,
+                        "blocktime": 1631304734
                     }
                 ],
-            'timestamp': '2021-07-22T17:58:24.140+00:00',
-            'nonce': 0,
-            'bits': 545259519,
-            'difficulty': '1',
-            'chainwork': '00001423',
-            'previousblockhash': '8d7014f2f941caa1972c8033b2f0a860ec8d4938b12bae2c62512852a558f405',
-            'nextblockhash': 'aa98305779686e66294a9b667e6ac77f5231bb2ce09fe7d9ca641775413ecb5a',
-            'auxpow': '01000000010000000000000000000000000000000000000000000000000000000000000000000000002cfabe6d6d3893390c9fe'
+                "time": 1631304734,
+                "mediantime": 1631304734,
+                "nonce": 0,
+                "bits": 402691492,
+                "difficulty": "4331957791305942",
+                "chainwork": "00000000",
+                "previousblockhash": "f565ec73ee383d1efdc492ada5314ec9b3a303d3aa3febe4f2f8cd74d9034319",
+                "nextblockhash": "0000000000000000000000000000000000000000000000000000000000000000",
+                "auxpow": "01000000010000000000000000000000000000000000000000000000000000000000000000000000002cfabe6d6d3893390c9fe",
+                "minerinfo": "🐟"
+            },
+            "createdAt": "2021-09-10T01:42:56.618Z",
+            "updatedAt": "2021-09-10T20:13:20.143Z",
+            "__v": 0
         }
-    Failure: { '_status': 'ERR', '_error': { 'code': 401, 'message': 'err_message' } }
+    }
+    Failure:
+    {
+        "meta": {
+            "code": 401,
+            "message": "ERR",
+            "network": "mainnet"
+        },
+        "error": err_message
+    }
 ```
 
 ### Retrieve the top merged miners

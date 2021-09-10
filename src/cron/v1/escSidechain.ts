@@ -1,17 +1,25 @@
 import mongoose from 'mongoose';
 import config from '../../config/config';
 import logging from '../../config/logging';
-import rpcService from '../../services/v1/elaMainchainRpc';
+import rpcService from '../../services/v1/escSidechainRpc';
 import connMainnet from '../../connections/mainnet';
 import connTestnet from '../../connections/testnet';
+import Web3 from 'web3';
 
-const NAMESPACE = 'Cron: ELA Mainchain';
+const NAMESPACE = 'Cron: ESC Sidechain';
 
 function setLatestBlockInfo(network: string) {
     logging.info(NAMESPACE, `Started cronjob: setLatestBlockInfo: ${network}`);
 
-    const rpcUrl = network === config.blockchain.testnet ? config.blockchain.elaMainchain.testnet.rpcUrl : config.blockchain.elaMainchain.mainnet.rpcUrl;
-    const backupRpcUrl = network === config.blockchain.testnet ? config.blockchain.elaMainchain.testnet.backupRpcUrl : config.blockchain.elaMainchain.mainnet.backupRpcUrl;
+    const rpcUrl = network === config.blockchain.testnet ? config.blockchain.escSidechain.testnet.rpcUrl : config.blockchain.escSidechain.mainnet.rpcUrl;
+    const backupRpcUrl = network === config.blockchain.testnet ? config.blockchain.escSidechain.testnet.backupRpcUrl : config.blockchain.escSidechain.mainnet.backupRpcUrl;
+    const chainId = network === config.blockchain.testnet ? config.blockchain.escSidechain.testnet.chainId : config.blockchain.escSidechain.mainnet.chainId;
+    const genesisBlockHash = network === config.blockchain.testnet ? config.blockchain.escSidechain.testnet.genesisBlockHash : config.blockchain.escSidechain.mainnet.genesisBlockHash;
+    const depositAddress = network === config.blockchain.testnet ? config.blockchain.escSidechain.testnet.depositAddress : config.blockchain.escSidechain.mainnet.depositAddress;
+    const withdrawContractAddress =
+        network === config.blockchain.testnet ? config.blockchain.escSidechain.testnet.withdrawContractAddress : config.blockchain.escSidechain.mainnet.withdrawContractAddress;
+
+    const web3 = new Web3(rpcUrl);
 
     const conn = network === config.blockchain.testnet ? connTestnet : connMainnet;
 
@@ -22,20 +30,20 @@ function setLatestBlockInfo(network: string) {
             return currentHeight;
         })
         .then((height) => {
-            conn.models.LatestBlockchainState.findOne({ chain: config.blockchain.elaMainchain.name })
+            conn.models.LatestBlockchainState.findOne({ chain: config.blockchain.escSidechain.name })
                 .exec()
                 .then((state) => {
                     const latestState =
                         state ||
                         new conn.models.LatestBlockchainState({
                             _id: new mongoose.Types.ObjectId(),
-                            chain: config.blockchain.elaMainchain.name,
+                            chain: config.blockchain.escSidechain.name,
                             network
                         });
-                    rpcService
-                        .getBlockInfoByHeight(network, height)
-                        .then((r: any) => {
-                            return r.data.block;
+                    web3.eth
+                        .getBlock(height)
+                        .then((block: any) => {
+                            return block;
                         })
                         .then((block: any) => {
                             latestState.height = height;
@@ -52,17 +60,19 @@ function setLatestBlockInfo(network: string) {
                             };
                             latestState.avgTxHourly = Infinity;
                             latestState.accountsOverOneELA = Infinity;
-                            latestState.hashrate = 'TBD';
-                            latestState.numTx = block.tx.length;
+                            latestState.numTx = block.transactions.length;
                             latestState.extraInfo = {
                                 rpcUrl,
-                                backupRpcUrl
+                                backupRpcUrl,
+                                chainId,
+                                genesisBlockHash,
+                                depositAddress,
+                                withdrawContractAddress
                             };
                             latestState.save();
                         })
                         .catch((err: any) => {
                             logging.error(NAMESPACE, 'Error while getting the latest block from the blockchain: ', err);
-                            return false;
                         });
                 })
                 .catch((err) => {
@@ -73,7 +83,7 @@ function setLatestBlockInfo(network: string) {
             logging.info(NAMESPACE, `Completed cronjob: setLatestBlockInfo: ${network}`);
             setTimeout(() => {
                 setLatestBlockInfo(network);
-            }, 60000);
+            }, 5000);
         })
         .catch((err) => {
             logging.error(NAMESPACE, 'Error while trying to run the cronjob to get latest block info: ', err);
