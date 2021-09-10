@@ -16,8 +16,14 @@ function publishDIDTx(network: string) {
     logging.info(NAMESPACE, `Started cronjob: publishDIDTx: ${network}`);
 
     const rpcUrl = network === config.blockchain.testnet ? config.blockchain.eidSidechain.testnet.rpcUrl : config.blockchain.eidSidechain.mainnet.rpcUrl;
-    const contractAddress = network === config.blockchain.testnet ? config.blockchain.eidSidechain.testnet.contractAddress : config.blockchain.eidSidechain.mainnet.contractAddress;
+    const backupRpcUrl = network === config.blockchain.testnet ? config.blockchain.eidSidechain.testnet.backupRpcUrl : config.blockchain.eidSidechain.mainnet.backupRpcUrl;
     const chainId = network === config.blockchain.testnet ? config.blockchain.eidSidechain.testnet.chainId : config.blockchain.eidSidechain.mainnet.chainId;
+    const genesisBlockHash = network === config.blockchain.testnet ? config.blockchain.eidSidechain.testnet.genesisBlockHash : config.blockchain.eidSidechain.mainnet.genesisBlockHash;
+    const depositAddress = network === config.blockchain.testnet ? config.blockchain.eidSidechain.testnet.depositAddress : config.blockchain.eidSidechain.mainnet.depositAddress;
+    const withdrawContractAddress =
+        network === config.blockchain.testnet ? config.blockchain.eidSidechain.testnet.withdrawContractAddress : config.blockchain.eidSidechain.mainnet.withdrawContractAddress;
+    const didContractAddress = network === config.blockchain.testnet ? config.blockchain.eidSidechain.testnet.didContractAddress : config.blockchain.eidSidechain.mainnet.didContractAddress;
+
     const web3 = new Web3(rpcUrl);
 
     const conn = network === config.blockchain.testnet ? connTestnet : connMainnet;
@@ -40,8 +46,12 @@ function publishDIDTx(network: string) {
                             network,
                             extraInfo: {
                                 rpcUrl,
-                                contractAddress,
-                                chainId
+                                backupRpcUrl,
+                                chainId,
+                                genesisBlockHash,
+                                depositAddress,
+                                withdrawContractAddress,
+                                didContractAddress
                             }
                         });
                     web3.eth

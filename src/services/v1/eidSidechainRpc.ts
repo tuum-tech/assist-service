@@ -15,7 +15,7 @@ const getEidSidechainHeaders = (): any => {
 
 async function signTx(network: string, wallet: any, payload: string, index: number = 0) {
     const rpcUrl = network === config.blockchain.mainnet ? config.blockchain.eidSidechain.mainnet.rpcUrl : config.blockchain.eidSidechain.testnet.rpcUrl;
-    const contractAddress = network === config.blockchain.mainnet ? config.blockchain.eidSidechain.mainnet.contractAddress : config.blockchain.eidSidechain.testnet.contractAddress;
+    const contractAddress = network === config.blockchain.mainnet ? config.blockchain.eidSidechain.mainnet.didContractAddress : config.blockchain.eidSidechain.testnet.didContractAddress;
     const chainId = network === config.blockchain.mainnet ? config.blockchain.eidSidechain.mainnet.chainId : config.blockchain.eidSidechain.testnet.chainId;
 
     const PUBLISH_CONTRACT_ABI: AbiItem[] = [

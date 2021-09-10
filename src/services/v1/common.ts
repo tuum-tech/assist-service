@@ -1,3 +1,5 @@
+import fetch from 'cross-fetch';
+
 const NAMESPACE = 'Service: Common';
 
 async function handleRoute(url: string, body: any, headers: any, post: boolean = true) {

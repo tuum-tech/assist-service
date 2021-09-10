@@ -74,22 +74,61 @@ const EID_SIDECHAIN = {
     name: 'eidSidechain',
     mainnet: {
         rpcUrl: 'https://api.elastos.io/eid',
-        contractAddress: '0x46E5936a9bAA167b3368F4197eDce746A66f7a7a',
-        chainId: 22
+        backupRpcUrl: 'https://api.trinity-tech.cn/eid',
+        chainId: 22,
+        genesisBlockHash: '0x7d0702054ad68913eff9137dfa0b0b6ff701d55062359deacad14859561f5567',
+        depositAddress: 'XUgTgCnUEqMUKLFAg3KhGv1nnt9nn8i3wi',
+        withdrawContractAddress: '0x6F60FdED6303e73A83ef99c53963407f415e80b9',
+        didContractAddress: '0x46E5936a9bAA167b3368F4197eDce746A66f7a7a'
     },
     testnet: {
         rpcUrl: 'https://api-testnet.elastos.io/eid',
-        contractAddress: '0xF654c3cBBB60D7F4ac7cDA325d51E62f47ACD436',
-        chainId: 23
+        backupRpcUrl: 'https://api-testnet.trinity-tech.cn/eid',
+        chainId: 23,
+        genesisBlockHash: '0x3d0f9da9320556f6d58129419e041de28cf515eedc6b59f8dae49df98e3f943c',
+        depositAddress: 'XPsgiVQC3WucBYDL2DmPixj74Aa9aG3et8',
+        withdrawContractAddress: '0x762a042b8B9f9f0d3179e992d965c11785219599',
+        didContractAddress: '0xF654c3cBBB60D7F4ac7cDA325d51E62f47ACD436'
     },
     wallets: EID_SIDECHAIN_WALLETS
+};
+const ESC_SIDECHAIN = {
+    name: 'escSidechain',
+    mainnet: {
+        rpcUrl: 'https://api.elastos.io/eth',
+        backupRpcUrl: 'https://api.trinity-tech.cn/eth',
+        chainId: 20,
+        depositAddress: 'XPsgiVQC3WucBYDL2DmPixj74Aa9aG3et8',
+        withdrawContractAddress: '0x762a042b8B9f9f0d3179e992d965c11785219599'
+    },
+    testnet: {
+        rpcUrl: 'https://api-testnet.elastos.io/eth',
+        backupRpcUrl: 'https://api-testnet.trinity-tech.cn/eth',
+        chainId: 21,
+        depositAddress: 'XPsgiVQC3WucBYDL2DmPixj74Aa9aG3et8',
+        withdrawContractAddress: '0x762a042b8B9f9f0d3179e992d965c11785219599'
+    },
+    wallets: EID_SIDECHAIN_WALLETS
+};
+const ELA_MAINCHAIN = {
+    name: 'elaMainchain',
+    mainnet: {
+        rpcUrl: 'https://api.elastos.io/ela',
+        backupRpcUrl: 'https://api.trinity-tech.cn/ela'
+    },
+    testnet: {
+        rpcUrl: 'https://api-testnet.elastos.io/ela',
+        backupRpcUrl: 'https://api-testnet.trinity-tech.cn/ela'
+    }
 };
 const BLOCKCHAIN = {
     mainnet: 'mainnet',
     testnet: 'testnet',
     tuumnet: 'tuumnet',
     validNetworks: ['mainnet', 'testnet'],
-    eidSidechain: EID_SIDECHAIN
+    eidSidechain: EID_SIDECHAIN,
+    escSidechain: ESC_SIDECHAIN,
+    elaMainchain: ELA_MAINCHAIN
 };
 
 const TX_STATUS = {
