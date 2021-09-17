@@ -7,6 +7,10 @@ const router = express.Router();
 router.get('/validate', extractJWT, controller.validateToken);
 router.post('/register', controller.register);
 router.post('/login', controller.login);
+// router.post('/upgrade/createTx', extractJWT, controller.upgradeCreateTx);
+// router.post('/upgrade/signTx', extractJWT, controller.upgradeSignTx);
+router.post('/payment/createTx', extractJWT, controller.paymentCreateTx);
+router.post('/payment/signTx', extractJWT, controller.paymentSignTx);
 router.get('/get/all', extractJWT, controller.getAllUsers);
 router.get('/get/newUserStats', extractJWT, controller.getNewUserStats);
 

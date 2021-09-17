@@ -87,7 +87,11 @@ const publishDIDTx = (req: Request, res: Response, next: NextFunction) => {
                                 };
                                 user.requests.premiumEndpoints.today += 1;
                                 user.requests.premiumEndpoints.all += 1;
-                                user.save();
+                                user.save().catch((error: any) => {
+                                    logging.error(NAMESPACE, 'Error while trying to sign the transaction: ', error);
+
+                                    return res.status(500).json(commonService.returnError(config.blockchain.mainnet, 500, error));
+                                });
                                 return res.status(201).json(commonService.returnSuccess(network, 200, data));
                             })
                             .catch((error: any) => {
@@ -141,7 +145,11 @@ const getAllDIDTxes = (req: Request, res: Response, next: NextFunction) => {
                         const user: IUser = account.user;
                         user.requests.premiumEndpoints.today += 1;
                         user.requests.premiumEndpoints.all += 1;
-                        user.save();
+                        user.save().catch((error: any) => {
+                            logging.error(NAMESPACE, 'Error while trying to get all the DID transactions: ', error);
+
+                            return res.status(500).json(commonService.returnError(config.blockchain.mainnet, 500, error));
+                        });
                         return res.status(200).json(commonService.returnSuccess(network, 200, data));
                     })
                     .catch((error) => {
@@ -189,7 +197,11 @@ const getDIDTxFromConfirmationId = (req: Request, res: Response, next: NextFunct
                         const user: IUser = account.user;
                         user.requests.freeEndpoints.today += 1;
                         user.requests.freeEndpoints.all += 1;
-                        user.save();
+                        user.save().catch((error: any) => {
+                            logging.error(NAMESPACE, 'Error while trying to get a DID transaction from confirmationId: ', error);
+
+                            return res.status(500).json(commonService.returnError(config.blockchain.mainnet, 500, error));
+                        });
                         return res.status(200).json(commonService.returnSuccess(network, 200, data));
                     })
                     .catch((error) => {
@@ -243,7 +255,11 @@ const getDIDTxStats = (req: Request, res: Response, next: NextFunction) => {
                     const user: IUser = account.user;
                     user.requests.premiumEndpoints.today += 1;
                     user.requests.premiumEndpoints.all += 1;
-                    user.save();
+                    user.save().catch((error: any) => {
+                        logging.error(NAMESPACE, 'Error while trying to get DID tx stats: ', error);
+
+                        return res.status(500).json(commonService.returnError(config.blockchain.mainnet, 500, error));
+                    });
                     return res.status(200).json(commonService.returnSuccess(network, 200, data));
                 })
                 .catch((error) => {
@@ -277,7 +293,11 @@ const getBlockInfoLatest = (req: Request, res: Response, next: NextFunction) => 
                     const user: IUser = account.user;
                     user.requests.premiumEndpoints.today += 1;
                     user.requests.premiumEndpoints.all += 1;
-                    user.save();
+                    user.save().catch((error: any) => {
+                        logging.error(NAMESPACE, 'Error while trying to get the latest block info: ', error);
+
+                        return res.status(500).json(commonService.returnError(config.blockchain.mainnet, 500, error));
+                    });
                     return res.status(200).json(commonService.returnSuccess(network, 200, data));
                 })
                 .catch((error) => {

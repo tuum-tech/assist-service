@@ -80,17 +80,17 @@ const register = (req: Request, res: Response, next: NextFunction) => {
                         _id: new mongoose.Types.ObjectId(),
                         username,
                         password: hash,
-                        accountType: config.user.freeAcountType,
+                        accountType: config.user.freeAcountType.name,
                         requests: {
                             freeEndpoints: {
                                 today: 0,
                                 all: 0,
-                                dailyLimit: config.user.freeEndpointsDailyLimit
+                                dailyLimit: network === config.blockchain.testnet ? config.user.premiumAccountType.freeEndpointsDailyLimit : config.user.freeAcountType.freeEndpointsDailyLimit
                             },
                             premiumEndpoints: {
                                 today: 0,
                                 all: 0,
-                                dailyLimit: network === config.blockchain.testnet ? config.user.freeEndpointsDailyLimit : config.user.premiumEndpointsDailyLimit
+                                dailyLimit: network === config.blockchain.testnet ? config.user.premiumAccountType.premiumEndpointsDailyLimit : config.user.freeAcountType.premiumEndpointsDailyLimit
                             }
                         }
                     });
@@ -139,6 +139,7 @@ const login = (req: Request, res: Response, next: NextFunction) => {
                             // We don't want to show the password during login
                             const _user = JSON.parse(JSON.stringify(user));
                             delete _user.password;
+                            delete _user.orderId;
                             const data = {
                                 message: 'Auth successful',
                                 token,
@@ -167,6 +168,8 @@ const getAllUsers = (req: Request, res: Response, next: NextFunction) => {
 
     const result: any = conn.models.User.find()
         .select('-password')
+        .select('-balance')
+        .select('-orderId')
         .exec()
         .then((users) => {
             const data = {
@@ -182,7 +185,11 @@ const getAllUsers = (req: Request, res: Response, next: NextFunction) => {
                     const user: IUser = account.user;
                     user.requests.premiumEndpoints.today += 1;
                     user.requests.premiumEndpoints.all += 1;
-                    user.save();
+                    user.save().catch((error: any) => {
+                        logging.error(NAMESPACE, 'Error while trying to get all users: ', error);
+
+                        return res.status(500).json(commonService.returnError(network, 500, error));
+                    });
                     return res.status(200).json(commonService.returnSuccess(network, 200, data));
                 })
                 .catch((error) => {
@@ -235,7 +242,11 @@ const getNewUserStats = (req: Request, res: Response, next: NextFunction) => {
                     const user: IUser = account.user;
                     user.requests.premiumEndpoints.today += 1;
                     user.requests.premiumEndpoints.all += 1;
-                    user.save();
+                    user.save().catch((error: any) => {
+                        logging.error(NAMESPACE, 'Error while trying to get user stats: ', error);
+
+                        return res.status(500).json(commonService.returnError(network, 500, error));
+                    });
                     return res.status(200).json(commonService.returnSuccess(network, 200, data));
                 })
                 .catch((error) => {
@@ -249,4 +260,106 @@ const getNewUserStats = (req: Request, res: Response, next: NextFunction) => {
     return result;
 };
 
-export default { validateToken, register, login, getAllUsers, getNewUserStats };
+const paymentCreateTx = (req: Request, res: Response, next: NextFunction) => {
+    const authTokenDecoded = res.locals.jwt;
+    const username = authTokenDecoded.username;
+
+    const conn = connMainnet;
+
+    const result: any = conn.models.User.findOne({ username })
+        .select('-password')
+        .exec()
+        .then((user: IUser) => {
+            if (user.accountType !== config.user.premiumAccountType.name) {
+                const error =
+                    'Error while trying to create a payment transaction because this account is not a premium account type. Please upgrade your account from free to premium first with /v1/users/upgrade/createTx and /v1/users/upgrade/signTx API endpoints before proceeding.';
+                return res.status(401).json(commonService.returnError(config.blockchain.mainnet, 401, error));
+            }
+            const expiresAt = new Date();
+            expiresAt.setMinutes(expiresAt.getMinutes() + 5);
+            const orderId = `assist-${Math.random().toString(36).substring(2, 9)}`;
+            const data = {
+                orderId,
+                ELAAddress: config.server.paymentElaAddress,
+                nextStep:
+                    'Put the orderId as part of the memo using Essentials Wallet and send some ELA to the given address on the ELA mainchain, then proceed with the /v1/users/payment/signTx API endpoint to complete the transaction.'
+            };
+            user.orderId = orderId;
+            user.save().catch((error: any) => {
+                logging.error(NAMESPACE, 'Error while trying to create a payment order to top up the account: ', error);
+
+                return res.status(500).json(commonService.returnError(config.blockchain.mainnet, 500, error));
+            });
+            return res.status(200).json(commonService.returnSuccess(config.blockchain.mainnet, 200, data));
+        })
+        .catch((error: any) => {
+            logging.error(NAMESPACE, 'Error while trying to create a payment order to top up the account: ', error);
+
+            return res.status(500).json(commonService.returnError(config.blockchain.mainnet, 500, error));
+        });
+    return result;
+};
+
+const paymentSignTx = (req: Request, res: Response, next: NextFunction) => {
+    const authTokenDecoded = res.locals.jwt;
+    const username = authTokenDecoded.username;
+
+    const { txHash } = req.body;
+
+    const conn = connMainnet;
+
+    const result: any = conn.models.User.findOne({ username })
+        .select('-password')
+        .exec()
+        .then((user: IUser) => {
+            if (user.accountType !== config.user.premiumAccountType.name) {
+                const error =
+                    'Error while trying to sign the payment transaction because this account is not a premium account type. Please upgrade your account from free to premium first with /v1/users/upgrade/createTx and /v1/users/upgrade/signTx API endpoints and create a payment transaction with /v1/users/payment/createTx API endpoint before proceeding.';
+                return res.status(401).json(commonService.returnError(config.blockchain.mainnet, 401, error));
+            }
+
+            // TODO: Retrieve the memo from the transaction
+            const memo = user.orderId;
+
+            // Check to see if orderId was included in the transaction memo
+            if (!memo.includes(user.orderId)) {
+                const error =
+                    'Error while trying to sign the payment transaction because the orderId could not be found in the transaction. Please generate another orderId using /v1/users/payment/createTx API endpoint before proceeding';
+                return res.status(401).json(commonService.returnError(config.blockchain.mainnet, 401, error));
+            }
+
+            // TODO: Retrieve the memo from the transaction
+            const orderId: string = user.orderId;
+
+            // Check to see whether the orderId matches the orderId in the database
+            if (user.orderId !== orderId) {
+                const error =
+                    'Error while trying to sign the payment transaction because the orderId found in the transaction memo did not match the orderId that was generated for this user. Please generate another orderId using /v1/users/payment/createTx API endpoint before proceeding';
+                return res.status(401).json(commonService.returnError(config.blockchain.mainnet, 401, error));
+            }
+
+            // TODO: Retrieve the ELA amount that was sent as part of the transaction
+            const amount: number = 1;
+
+            user.balance += amount;
+            user.orderId = '';
+            user.save().catch((error: any) => {
+                logging.error(NAMESPACE, 'Error while trying to sign the payment order to top up the account: ', error);
+
+                return res.status(500).json(commonService.returnError(config.blockchain.mainnet, 500, error));
+            });
+            const data = {
+                amountAdded: amount,
+                newBalance: user.balance
+            };
+            return res.status(200).json(commonService.returnSuccess(config.blockchain.mainnet, 200, data));
+        })
+        .catch((error: any) => {
+            logging.error(NAMESPACE, 'Error while trying to sign the payment order to top up the account: ', error);
+
+            return res.status(500).json(commonService.returnError(config.blockchain.mainnet, 500, error));
+        });
+    return result;
+};
+
+export default { validateToken, register, login, getAllUsers, getNewUserStats, paymentCreateTx, paymentSignTx };

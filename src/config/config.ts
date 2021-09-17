@@ -15,7 +15,8 @@ const SERVER = {
         expireTime: SERVER_TOKEN_EXPIRETIME,
         issuer: SERVER_TOKEN_ISSUER,
         secret: SERVER_TOKEN_SECRET
-    }
+    },
+    paymentElaAddress: process.env.PAYMENT_ELA_ADDRESS || 'EHohTEm9oVUY5EQxm8MDb6fBEoRpwTyjbb'
 };
 
 const MONGO_OPTIONS: mongoose.ConnectOptions = {
@@ -53,10 +54,17 @@ const MONGO = {
 
 const USER = {
     defaultUsername: 'defaultUser',
-    freeAcountType: 'free',
-    premiumAccountType: 'premium',
-    freeEndpointsDailyLimit: 10000,
-    premiumEndpointsDailyLimit: 10
+    freeAcountType: {
+        name: 'free',
+        freeEndpointsDailyLimit: 10000,
+        premiumEndpointsDailyLimit: 10
+    },
+    premiumAccountType: {
+        name: 'premium',
+        balance: 0,
+        freeEndpointsDailyLimit: 25000,
+        premiumEndpointsDailyLimit: 25
+    }
 };
 
 const DEFAULT_WALLET =
