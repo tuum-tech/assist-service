@@ -4,6 +4,7 @@ const UserSchema: Schema = new Schema(
     {
         username: { type: String, required: true, unique: true },
         password: { type: String, required: true },
+        did: { type: String, required: false },
         accountType: { type: String, required: true },
         balance: { type: Number, required: false },
         orderId: { type: String, required: false },

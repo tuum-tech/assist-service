@@ -10,6 +10,7 @@ import accountFunction from '../../functions/account';
 import userStats from '../../functions/stats/user';
 import commonFunction from '../../functions/common';
 import commonService from '../../services/v1/common';
+import elaRpcService from '../../services/v1/elaMainchainRpc';
 import IUser from '../../interfaces/user';
 import jwtDecode, { JwtPayload } from 'jwt-decode';
 
@@ -277,7 +278,7 @@ const paymentCreateTx = (req: Request, res: Response, next: NextFunction) => {
             }
             const expiresAt = new Date();
             expiresAt.setMinutes(expiresAt.getMinutes() + 5);
-            const orderId = `assist-${Math.random().toString(36).substring(2, 9)}`;
+            const orderId = `assist-${Math.random().toString(36).substring(2, 11)}`;
             const data = {
                 orderId,
                 ELAAddress: config.server.paymentElaAddress,
@@ -318,41 +319,44 @@ const paymentSignTx = (req: Request, res: Response, next: NextFunction) => {
                 return res.status(401).json(commonService.returnError(config.blockchain.mainnet, 401, error));
             }
 
-            // TODO: Retrieve the memo from the transaction
-            const memo = user.orderId;
+            // Retrieve the memo from the transaction
+            elaRpcService
+                .getMemoFromTransaction(config.blockchain.mainnet, txHash)
+                .then((r: any) => {
+                    if (r.error) {
+                        return res.status(404).json(commonService.returnError(config.blockchain.mainnet, 404, r.error));
+                    }
+                    const memo = r.data.memo;
 
-            // Check to see if orderId was included in the transaction memo
-            if (!memo.includes(user.orderId)) {
-                const error =
-                    'Error while trying to sign the payment transaction because the orderId could not be found in the transaction. Please generate another orderId using /v1/users/payment/createTx API endpoint before proceeding';
-                return res.status(401).json(commonService.returnError(config.blockchain.mainnet, 401, error));
-            }
+                    // Check to see if orderId was included in the transaction memo
+                    if (!(user.orderId && memo.message.includes(user.orderId))) {
+                        const error =
+                            'Error while trying to sign the payment transaction because the orderId could not be found. Please generate another orderId using /v1/users/payment/createTx API endpoint before proceeding';
+                        return res.status(401).json(commonService.returnError(config.blockchain.mainnet, 401, error));
+                    }
 
-            // TODO: Retrieve the memo from the transaction
-            const orderId: string = user.orderId;
+                    // Retrieve the ELA amount that was sent as part of the transaction
+                    const amount: number = memo.amount;
 
-            // Check to see whether the orderId matches the orderId in the database
-            if (user.orderId !== orderId) {
-                const error =
-                    'Error while trying to sign the payment transaction because the orderId found in the transaction memo did not match the orderId that was generated for this user. Please generate another orderId using /v1/users/payment/createTx API endpoint before proceeding';
-                return res.status(401).json(commonService.returnError(config.blockchain.mainnet, 401, error));
-            }
+                    user.balance += amount;
+                    user.balance = Number(user.balance.toFixed(8));
+                    user.orderId = '';
+                    user.save().catch((error: any) => {
+                        logging.error(NAMESPACE, 'Error while trying to sign the payment order to top up the account: ', error);
 
-            // TODO: Retrieve the ELA amount that was sent as part of the transaction
-            const amount: number = 1;
+                        return res.status(500).json(commonService.returnError(config.blockchain.mainnet, 500, error));
+                    });
+                    const data = {
+                        amountAdded: amount,
+                        newBalance: user.balance
+                    };
+                    return res.status(200).json(commonService.returnSuccess(config.blockchain.mainnet, 200, data));
+                })
+                .catch((error: any) => {
+                    logging.error(NAMESPACE, 'Error while trying to get memo from the transaction: ', error);
 
-            user.balance += amount;
-            user.orderId = '';
-            user.save().catch((error: any) => {
-                logging.error(NAMESPACE, 'Error while trying to sign the payment order to top up the account: ', error);
-
-                return res.status(500).json(commonService.returnError(config.blockchain.mainnet, 500, error));
-            });
-            const data = {
-                amountAdded: amount,
-                newBalance: user.balance
-            };
-            return res.status(200).json(commonService.returnSuccess(config.blockchain.mainnet, 200, data));
+                    return res.status(500).json(commonService.returnError(config.blockchain.mainnet, 500, error));
+                });
         })
         .catch((error: any) => {
             logging.error(NAMESPACE, 'Error while trying to sign the payment order to top up the account: ', error);

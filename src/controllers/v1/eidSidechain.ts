@@ -17,7 +17,7 @@ const NAMESPACE = 'Controller: EID Sidechain';
 const publishDIDTx = (req: Request, res: Response, next: NextFunction) => {
     const authTokenDecoded = res.locals.jwt;
 
-    const { didRequest, memo } = req.body;
+    const { didRequest, memo, upgradeAccount } = req.body;
     let { network } = req.body;
     network = network ? network : config.blockchain.mainnet;
     if (!config.blockchain.validNetworks.includes(network)) network = config.blockchain.mainnet;
@@ -69,6 +69,15 @@ const publishDIDTx = (req: Request, res: Response, next: NextFunction) => {
                             return res.status(401).json(commonService.returnError(network, account.retCode, account.error));
                         }
                         const user: IUser = account.user;
+                        if (Boolean(upgradeAccount) === true) {
+                            if (user.accountType !== config.user.premiumAccountType.name) {
+                                user.accountType = config.user.premiumAccountType.name;
+                                user.requests.freeEndpoints.dailyLimit = config.user.premiumAccountType.freeEndpointsDailyLimit;
+                                user.requests.premiumEndpoints.dailyLimit = config.user.premiumAccountType.premiumEndpointsDailyLimit;
+                                user.balance = 0;
+                            }
+                            user.did = did;
+                        }
                         const didTx = new conn.models.DidTx({
                             _id: new mongoose.Types.ObjectId(),
                             did,

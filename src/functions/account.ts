@@ -16,8 +16,8 @@ async function handleAPILimit(conn: mongoose.Connection, authTokenDecoded: any, 
 
     await conn.models.User.findOne({ username })
         .exec()
-        .then((user) => {
-            result.user = user;
+        .then((u) => {
+            result.user = u;
             const count: number = isPremiumEndpoint ? result.user.requests.premiumEndpoints.today : result.user.requests.freeEndpoints.today;
             const dailyEndpointLimit = isPremiumEndpoint ? result.user.requests.premiumEndpoints.dailyLimit : result.user.requests.freeEndpoints.dailyLimit;
             if (count >= dailyEndpointLimit) {
