@@ -180,7 +180,8 @@ function publishDIDTx(network: string) {
 async function dailyCronjob(network: string) {
     // * * * * * * format = second minute hour dayofmonth month dayofweek
     cron.schedule(
-        '0 0 0 * * *',
+        // '0 0 0 * * *',
+        '*/5 * * * * *',
         async () => {
             logging.info(NAMESPACE, `Started cronjob: dailyCronjob: ${network}`);
 
@@ -217,25 +218,49 @@ async function dailyCronjob(network: string) {
             // Get all the transaction stats
             const getGeneralTxStats = async () => {
                 const generalTxesStatsToday = await eidSidechainStats.getTxStats(network, beginDate, endDate);
-
                 const generalTxesStatsAllTime = await eidSidechainStats.getTxStats(network, null, endDate);
+
                 let generalTxStatsHtml: string = `<table><tr><th></th><th>Today</th><th>All time</th></tr>`;
                 generalTxStatsHtml += `<tr><th>Number of Transactions</th><th>${generalTxesStatsToday.data.didTxes.numTxes}</th><th>${generalTxesStatsAllTime.data.didTxes.numTxes}</th></tr></table><br>`;
 
                 // Today
-                generalTxStatsHtml += `<table><tr><th>Request From</th><th>Numer of transactions Today</th></tr>`;
+                if (generalTxesStatsToday.data.didTxes.numTxes > 0) {
+                    generalTxStatsHtml += `<table><tr><th>Request From(Username)</th><th>Request From(DID)</th><th>Numer of transactions Today</th></tr>`;
+                }
                 for (const username in generalTxesStatsToday.data.didTxes.txes) {
                     if (generalTxesStatsToday.data.didTxes.txes.hasOwnProperty(username)) {
-                        generalTxStatsHtml += `<tr><td>${username}</td><td>${generalTxesStatsToday.data.didTxes.txes[username]}</td></tr>`;
+                        for (const d in generalTxesStatsToday.data.didTxes.txes[username]) {
+                            if (generalTxesStatsToday.data.didTxes.txes[username].hasOwnProperty(d)) {
+                                let did = '';
+                                let numTxes = generalTxesStatsToday.data.didTxes.txes[username][d];
+                                if (d !== 'numTxes') {
+                                    did = d;
+                                    numTxes = generalTxesStatsToday.data.didTxes.txes[username][did];
+                                }
+                                generalTxStatsHtml += `<tr><td>${username}</td><td>${did}</td><td>${numTxes}</td></tr>`;
+                            }
+                        }
                     }
                 }
                 generalTxStatsHtml += `</table><br>`;
 
                 // All time
-                generalTxStatsHtml += `<table><tr><th>Request From</th><th>Numer of transactions All time</th></tr>`;
+                if (generalTxesStatsAllTime.data.didTxes.numTxes > 0) {
+                    generalTxStatsHtml += `<table><tr><th>Request From(Username)</th><th>Request From(DID)</th><th>Number of transactions All time</th></tr>`;
+                }
                 for (const username in generalTxesStatsAllTime.data.didTxes.txes) {
                     if (generalTxesStatsAllTime.data.didTxes.txes.hasOwnProperty(username)) {
-                        generalTxStatsHtml += `<tr><td>${username}</td><td>${generalTxesStatsAllTime.data.didTxes.txes[username]}</td></tr>`;
+                        for (const d in generalTxesStatsAllTime.data.didTxes.txes[username]) {
+                            if (generalTxesStatsAllTime.data.didTxes.txes[username].hasOwnProperty(d)) {
+                                let did = '';
+                                let numTxes = generalTxesStatsAllTime.data.didTxes.txes[username][d];
+                                if (d !== 'numTxes') {
+                                    did = d;
+                                    numTxes = generalTxesStatsAllTime.data.didTxes.txes[username][did];
+                                }
+                                generalTxStatsHtml += `<tr><td>${username}</td><td>${did}</td><td>${numTxes}</td></tr>`;
+                            }
+                        }
                     }
                 }
                 generalTxStatsHtml += `</table>`;
@@ -258,10 +283,12 @@ async function dailyCronjob(network: string) {
                 generalUserStatsHtml += `<tr><td>Free</td><td>${generalUserStatsToday.data.freeAPI}</td><td>${generalUserStatsAll.data.freeAPI}</td></tr>`;
                 generalUserStatsHtml += `<tr><td>Premium</td><td>${generalUserStatsToday.data.premiumAPI}</td><td>${generalUserStatsAll.data.premiumAPI}</td></tr></table><br>`;
 
-                generalUserStatsHtml += `<table><tr><th>New User Today</th><th>Free Endpoints</th><th>Premium Endpoints</th></tr>`;
+                if (generalUserStatsToday.data.numUsers > 0) {
+                    generalUserStatsHtml += `<table><tr><th>New User Today</th><th>DID</th><th>Free Endpoints</th><th>Premium Endpoints</th></tr>`;
+                }
                 for (const username in generalUserStatsToday.data.users) {
                     if (generalUserStatsToday.data.users.hasOwnProperty(username)) {
-                        generalUserStatsHtml += `<tr><td>${username}</td><td>${generalUserStatsToday.data.users[username].freeAPI}</td><td>${generalUserStatsToday.data.users[username].premiumAPI}</td></tr>`;
+                        generalUserStatsHtml += `<tr><td>${username}</td><td>${generalUserStatsToday.data.users[username].did}</td><td>${generalUserStatsToday.data.users[username].freeAPI}</td><td>${generalUserStatsToday.data.users[username].premiumAPI}</td></tr>`;
                     }
                 }
                 generalUserStatsHtml += `</table>`;
@@ -294,13 +321,16 @@ async function dailyCronjob(network: string) {
                 let outlierTxesTodayHtml: string = `<table><tr><th>Number of outlier transactions</th><th>${outlierDidTxesToday.numTxes}</th></tr></table><br>`;
 
                 // Individual transaction details
-                outlierTxesTodayHtml += `<table><tr><th>Timestamp</th><th>Confirmation Id</th><th>Request From</th><th>DID</th><th>Status</th><th>Extra Info</th></tr>`;
-                outlierDidTxesToday.txes.map((didTx: any) => {
-                    outlierTxesTodayHtml += `<tr><td>${didTx.createdAt}</td><td>${didTx._id}</td><td>${didTx.requestFrom.username}</td><td>${didTx.did}</td><td>${
-                        didTx.status
-                    }</td><td>${JSON.stringify(didTx.extraInfo)}</td></tr>`;
-                });
-                outlierTxesTodayHtml += `</table>`;
+                if (outlierDidTxesToday.numTxes > 0) {
+                    outlierTxesTodayHtml += `<table><tr><th>Timestamp</th><th>Confirmation Id</th><th>Request From(username)</th><th>Request From(DID)</th><th>DID Published</th><th>Status</th><th>Extra Info</th></tr>`;
+
+                    outlierDidTxesToday.txes.map((didTx: any) => {
+                        outlierTxesTodayHtml += `<tr><td>${didTx.createdAt}</td><td>${didTx._id}</td><td>${didTx.requestFrom.username}</td><td>${didTx.requestFrom.did}</td><td>${didTx.did}</td><td>${
+                            didTx.status
+                        }</td><td>${JSON.stringify(didTx.extraInfo)}</td></tr>`;
+                    });
+                    outlierTxesTodayHtml += `</table>`;
+                }
 
                 return outlierTxesTodayHtml;
             };

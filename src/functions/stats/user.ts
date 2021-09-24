@@ -26,6 +26,8 @@ async function getStats(network: string, beginDate: any, endDate: Date, reset: b
 
     await conn.models.User.find({ createdAt: createdAtFilter })
         .select('-password')
+        .select('-balance')
+        .select('-orderId')
         .exec()
         .then((users) => {
             users.map((user) => {
@@ -38,6 +40,9 @@ async function getStats(network: string, beginDate: any, endDate: Date, reset: b
                     freeAPI: freeAPICountAll,
                     premiumAPI: premiumAPICountAll
                 };
+                if (user.did) {
+                    generalUserStats.data.users[user.username].did = user.did;
+                }
                 if (reset) {
                     user.requests.freeEndpoints.today = 0;
                     user.requests.premiumEndpoints.today = 0;

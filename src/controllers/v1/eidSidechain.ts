@@ -1,4 +1,4 @@
-import { NextFunction, Request, Response } from 'express';
+import { NextFunction, request, Request, Response } from 'express';
 import { Base64 } from 'js-base64';
 import mongoose from 'mongoose';
 import config from '../../config/config';
@@ -78,10 +78,21 @@ const publishDIDTx = (req: Request, res: Response, next: NextFunction) => {
                             }
                             user.did = did;
                         }
+                        let requestFrom = {};
+                        if (user.did) {
+                            requestFrom = {
+                                username: user.username,
+                                did: user.did
+                            };
+                        } else {
+                            requestFrom = {
+                                username: user.username
+                            };
+                        }
                         const didTx = new conn.models.DidTx({
                             _id: new mongoose.Types.ObjectId(),
                             did,
-                            requestFrom: { username: user.username },
+                            requestFrom,
                             didRequest,
                             memo,
                             status: config.txStatus.pending
@@ -237,14 +248,16 @@ const getDIDTxStats = (req: Request, res: Response, next: NextFunction) => {
     const conn = network === config.blockchain.testnet ? connTestnet : connMainnet;
 
     const dateString = req.query.created ? req.query.created.toString() : 'today';
-    const beginDate = commonFunction.getDateFromString(dateString);
+    let beginDate = commonFunction.getDateFromString(dateString);
     if (beginDate == null) {
-        const error = 'Date can only be passed in the following format: [today|yesterday|YYYY-MM-DD]';
+        const error = 'Date can only be passed in the following format: [today|yesterday|all|YYYY-MM-DD]';
         return res.status(500).json(commonService.returnError(network, 500, error));
     }
     const endDate = new Date(`${beginDate.getUTCFullYear()}-${('0' + (beginDate.getUTCMonth() + 1)).slice(-2)}-${('0' + beginDate.getUTCDate()).slice(-2)}`);
     if (dateString === 'today' || dateString === 'yesterday') {
         beginDate.setDate(beginDate.getDate() - 1);
+    } else if (dateString === 'all') {
+        beginDate = null;
     } else {
         endDate.setDate(endDate.getDate() + 1);
     }

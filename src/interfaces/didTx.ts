@@ -2,6 +2,7 @@ import { Document } from 'mongoose';
 
 interface IRequestFrom {
     username: string;
+    did: string;
 }
 
 export default interface IDidTx extends Document {

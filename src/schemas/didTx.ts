@@ -4,7 +4,8 @@ const DidTxSchema: Schema = new Schema(
     {
         did: { type: String, required: true },
         requestFrom: {
-            username: { type: String, required: true }
+            username: { type: String, required: true },
+            did: { type: String, required: false }
         },
         didRequest: { type: Object, required: true },
         memo: { type: String },

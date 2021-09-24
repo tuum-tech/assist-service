@@ -216,14 +216,16 @@ const getNewUserStats = (req: Request, res: Response, next: NextFunction) => {
     const conn = network === config.blockchain.testnet ? connTestnet : connMainnet;
 
     const dateString = req.query.created ? req.query.created.toString() : 'today';
-    const beginDate = commonFunction.getDateFromString(dateString);
+    let beginDate = commonFunction.getDateFromString(dateString);
     if (beginDate == null) {
-        const error = 'Date can only be passed in the following format: [today|yesterday|YYYY-MM-DD]';
+        const error = 'Date can only be passed in the following format: [today|yesterday|all|YYYY-MM-DD]';
         return res.status(500).json(commonService.returnError(network, 500, error));
     }
     const endDate = new Date(`${beginDate.getUTCFullYear()}-${('0' + (beginDate.getUTCMonth() + 1)).slice(-2)}-${('0' + beginDate.getUTCDate()).slice(-2)}`);
     if (dateString === 'today' || dateString === 'yesterday') {
         beginDate.setDate(beginDate.getDate() - 1);
+    } else if (dateString === 'all') {
+        beginDate = null;
     } else {
         endDate.setDate(endDate.getDate() + 1);
     }
@@ -271,9 +273,9 @@ const paymentCreateTx = (req: Request, res: Response, next: NextFunction) => {
         .select('-password')
         .exec()
         .then((user: IUser) => {
-            if (user.accountType !== config.user.premiumAccountType.name) {
+            if (user.accountType !== config.user.premiumAccountType.name || !user.did) {
                 const error =
-                    'Error while trying to create a payment transaction because this account is not a premium account type. Please upgrade your account from free to premium first with /v1/users/upgrade/createTx and /v1/users/upgrade/signTx API endpoints before proceeding.';
+                    'Error while trying to create a payment transaction because this account is not a premium account type. Please upgrade your account from free to premium first with /v1/eidSidechain/publish/didTx API endpoint and setting the flag "upgradeAccount" to true. You can rerun this API after the upgrade is complete.';
                 return res.status(401).json(commonService.returnError(config.blockchain.mainnet, 401, error));
             }
             const expiresAt = new Date();
@@ -313,9 +315,9 @@ const paymentSignTx = (req: Request, res: Response, next: NextFunction) => {
         .select('-password')
         .exec()
         .then((user: IUser) => {
-            if (user.accountType !== config.user.premiumAccountType.name) {
+            if (user.accountType !== config.user.premiumAccountType.name || !user.did) {
                 const error =
-                    'Error while trying to sign the payment transaction because this account is not a premium account type. Please upgrade your account from free to premium first with /v1/users/upgrade/createTx and /v1/users/upgrade/signTx API endpoints and create a payment transaction with /v1/users/payment/createTx API endpoint before proceeding.';
+                    'Error while trying to create a payment transaction because this account is not a premium account type. Please upgrade your account from free to premium first with /v1/eidSidechain/publish/didTx API endpoint and setting the flag "upgradeAccount" to true. You can then create a payment transaction with /v1/users/payment/createTx API endpoint before proceeding and finally this /v1/users/payment/signTx API endpoint to complete the order.';
                 return res.status(401).json(commonService.returnError(config.blockchain.mainnet, 401, error));
             }
 

@@ -9,7 +9,7 @@ dayjs.extend(formatParser);
 
 function getDateFromString(dateString: string) {
     let date = new Date();
-    if (dateString === 'today') {
+    if (dateString === 'today' || dateString === 'all') {
         return date;
     } else if (dateString === 'yesterday') {
         date.setDate(date.getDate() - 1);

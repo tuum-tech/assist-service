@@ -27,14 +27,23 @@ async function getTxStats(network: string, beginDate: any, endDate: Date) {
 
     await conn.models.DidTx.aggregate([
         { $match: { createdAt: createdAtFilter } },
-        { $group: { _id: '$requestFrom.username', count: { $sum: 1 } } },
-        { $project: { _id: 0, username: '$_id', count: '$count' } }
+        { $group: { _id: '$requestFrom', count: { $sum: 1 } } },
+        { $project: { _id: 0, requestFrom: '$_id', count: '$count' } }
     ])
         .then((result) => {
             for (const r of result) {
                 const numTxes = r.count;
                 generalTxesStats.data.didTxes.numTxes += numTxes;
-                generalTxesStats.data.didTxes.txes[r.username] = numTxes;
+                if (generalTxesStats.data.didTxes.txes.hasOwnProperty(r.requestFrom.username) && generalTxesStats.data.didTxes.txes[r.requestFrom.username].hasOwnProperty('numTxes')) {
+                    generalTxesStats.data.didTxes.txes[r.requestFrom.username].numTxes += numTxes;
+                } else {
+                    generalTxesStats.data.didTxes.txes[r.requestFrom.username] = {
+                        numTxes
+                    };
+                }
+                if (r.requestFrom.did) {
+                    generalTxesStats.data.didTxes.txes[r.requestFrom.username][r.requestFrom.did] = numTxes;
+                }
             }
         })
         .catch((error) => {
