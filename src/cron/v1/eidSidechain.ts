@@ -180,8 +180,7 @@ function publishDIDTx(network: string) {
 async function dailyCronjob(network: string) {
     // * * * * * * format = second minute hour dayofmonth month dayofweek
     cron.schedule(
-        // '0 0 0 * * *',
-        '*/5 * * * * *',
+        '0 0 0 * * *',
         async () => {
             logging.info(NAMESPACE, `Started cronjob: dailyCronjob: ${network}`);
 
