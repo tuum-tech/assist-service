@@ -86,12 +86,12 @@ const register = (req: Request, res: Response, next: NextFunction) => {
                             freeEndpoints: {
                                 today: 0,
                                 all: 0,
-                                dailyLimit: network === config.blockchain.testnet ? config.user.premiumAccountType.freeEndpointsDailyLimit : config.user.freeAcountType.freeEndpointsDailyLimit
+                                dailyQuota: network === config.blockchain.testnet ? config.user.premiumAccountType.freeEndpointsDailyQuota : config.user.freeAcountType.freeEndpointsDailyQuota
                             },
                             premiumEndpoints: {
                                 today: 0,
                                 all: 0,
-                                dailyLimit: network === config.blockchain.testnet ? config.user.premiumAccountType.premiumEndpointsDailyLimit : config.user.freeAcountType.premiumEndpointsDailyLimit
+                                dailyQuota: network === config.blockchain.testnet ? config.user.premiumAccountType.premiumEndpointsDailyQuota : config.user.freeAcountType.premiumEndpointsDailyQuota
                             }
                         }
                     });
@@ -285,7 +285,7 @@ const getAllUsers = (req: Request, res: Response, next: NextFunction) => {
             const isPremiumEndpoint = true;
             const weight = 0;
             accountFunction
-                .handleAPILimit(conn, authTokenDecoded, isPremiumEndpoint, weight)
+                .handleAPIQuota(conn, authTokenDecoded, isPremiumEndpoint, weight)
                 .then((account) => {
                     if (account.error) {
                         return res.status(401).json(commonService.returnError(network, account.retCode, account.error));
@@ -301,7 +301,7 @@ const getAllUsers = (req: Request, res: Response, next: NextFunction) => {
                     return res.status(200).json(commonService.returnSuccess(network, 200, data));
                 })
                 .catch((error) => {
-                    logging.error(NAMESPACE, 'Error while trying to verify account API limit', error);
+                    logging.error(NAMESPACE, 'Error while trying to verify account API quota', error);
 
                     return res.status(500).json(commonService.returnError(network, 500, error));
                 });
@@ -346,7 +346,7 @@ const getNewUserStats = (req: Request, res: Response, next: NextFunction) => {
             const isPremiumEndpoint = true;
             const weight = 0;
             accountFunction
-                .handleAPILimit(conn, authTokenDecoded, isPremiumEndpoint, weight)
+                .handleAPIQuota(conn, authTokenDecoded, isPremiumEndpoint, weight)
                 .then((account) => {
                     if (account.error) {
                         return res.status(401).json(commonService.returnError(network, account.retCode, account.error));
@@ -362,7 +362,7 @@ const getNewUserStats = (req: Request, res: Response, next: NextFunction) => {
                     return res.status(200).json(commonService.returnSuccess(network, 200, data));
                 })
                 .catch((error) => {
-                    logging.error(NAMESPACE, 'Error while trying to verify account API limit', error);
+                    logging.error(NAMESPACE, 'Error while trying to verify account API quota', error);
 
                     return res.status(500).json(commonService.returnError(network, 500, error));
                 });

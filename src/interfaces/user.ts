@@ -3,7 +3,7 @@ import { Document } from 'mongoose';
 interface IEndpointStats {
     today: number;
     all: number;
-    dailyLimit: number;
+    dailyQuota: number;
 }
 
 interface IRequests {

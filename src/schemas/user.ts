@@ -12,12 +12,12 @@ const UserSchema: Schema = new Schema(
             freeEndpoints: {
                 today: { type: Number, required: true },
                 all: { type: Number, required: true },
-                dailyLimit: { type: Number, required: true }
+                dailyQuota: { type: Number, required: true }
             },
             premiumEndpoints: {
                 today: { type: Number, required: true },
                 all: { type: Number, required: true },
-                dailyLimit: { type: Number, required: true }
+                dailyQuota: { type: Number, required: true }
             }
         }
     },

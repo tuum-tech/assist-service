@@ -23,7 +23,7 @@ const getBlockInfoLatest = (req: Request, res: Response, next: NextFunction) => 
             const isPremiumEndpoint = false;
             const weight = 0;
             accountFunction
-                .handleAPILimit(conn, authTokenDecoded, isPremiumEndpoint, weight)
+                .handleAPIQuota(conn, authTokenDecoded, isPremiumEndpoint, weight)
                 .then((account) => {
                     if (account.error) {
                         return res.status(401).json(commonService.returnError(network, account.retCode, account.error));
@@ -39,7 +39,7 @@ const getBlockInfoLatest = (req: Request, res: Response, next: NextFunction) => 
                     return res.status(200).json(commonService.returnSuccess(network, 200, data));
                 })
                 .catch((error) => {
-                    logging.error(NAMESPACE, 'Error while trying to verify account API limit', error);
+                    logging.error(NAMESPACE, 'Error while trying to verify account API quota', error);
 
                     return res.status(500).json(commonService.returnError(network, 500, error));
                 });

@@ -57,14 +57,14 @@ const USER = {
     defaultUsername: 'defaultUser',
     freeAcountType: {
         name: 'free',
-        freeEndpointsDailyLimit: 10000,
-        premiumEndpointsDailyLimit: 10
+        freeEndpointsDailyQuota: 10000,
+        premiumEndpointsDailyQuota: 10
     },
     premiumAccountType: {
         name: 'premium',
         balance: 0,
-        freeEndpointsDailyLimit: 25000,
-        premiumEndpointsDailyLimit: 25
+        freeEndpointsDailyQuota: 25000,
+        premiumEndpointsDailyQuota: 25
     }
 };
 
