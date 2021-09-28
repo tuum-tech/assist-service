@@ -16,7 +16,8 @@ const SERVER = {
         issuer: SERVER_TOKEN_ISSUER,
         secret: SERVER_TOKEN_SECRET
     },
-    paymentElaAddress: process.env.PAYMENT_ELA_ADDRESS || 'EHohTEm9oVUY5EQxm8MDb6fBEoRpwTyjbb'
+    paymentElaAddress: process.env.PAYMENT_ELA_ADDRESS || 'EHohTEm9oVUY5EQxm8MDb6fBEoRpwTyjbb',
+    cmcApiKey: process.env.CMC_API_KEY || 'bh39a234-1053-57h4-44gv-83a16b1e3f84'
 };
 
 const MONGO_OPTIONS: mongoose.ConnectOptions = {

@@ -15,6 +15,7 @@ const LatestBlockchainStateSchema: Schema = new Schema(
             url: { type: String },
             ip: { type: String }
         },
+        elaPriceUsd: { type: Number },
         avgTxHourly: { type: Number },
         accountsOverOneELA: { type: Number },
         hashrate: { type: String },

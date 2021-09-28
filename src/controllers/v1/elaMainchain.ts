@@ -1,15 +1,11 @@
 import { NextFunction, Request, Response } from 'express';
-import { Base64 } from 'js-base64';
-import mongoose from 'mongoose';
 import config from '../../config/config';
 import logging from '../../config/logging';
 import connMainnet from '../../connections/mainnet';
 import connTestnet from '../../connections/testnet';
-import eidSidechainStats from '../../functions/stats/eidSidechain';
-import commonFunction from '../../functions/common';
 import accountFunction from '../../functions/account';
 import commonService from '../../services/v1/common';
-import rpcService from '../../services/v1/eidSidechainRpc';
+import externalService from '../../services/v1/external';
 import IUser from '../../interfaces/user';
 
 const NAMESPACE = 'Controller: ELA Mainchain';
@@ -25,8 +21,10 @@ const getBlockInfoLatest = (req: Request, res: Response, next: NextFunction) => 
     const result: any = conn.models.LatestBlockchainState.findOne({ chain: config.blockchain.elaMainchain.name })
         .exec()
         .then((data) => {
+            const isPremiumEndpoint = false;
+            const weight = 0;
             accountFunction
-                .handleAPILimit(conn, authTokenDecoded, false)
+                .handleAPILimit(conn, authTokenDecoded, isPremiumEndpoint, weight)
                 .then((account) => {
                     if (account.error) {
                         return res.status(401).json(commonService.returnError(network, account.retCode, account.error));

@@ -62,8 +62,10 @@ const publishDIDTx = (req: Request, res: Response, next: NextFunction) => {
             } else {
                 const conn = network === config.blockchain.testnet ? connTestnet : connMainnet;
 
+                const isPremiumEndpoint = true;
+                const weight = 0;
                 accountFunction
-                    .handleAPILimit(conn, authTokenDecoded, true)
+                    .handleAPILimit(conn, authTokenDecoded, isPremiumEndpoint, weight)
                     .then((account) => {
                         if (account.error) {
                             return res.status(401).json(commonService.returnError(network, account.retCode, account.error));
@@ -156,8 +158,10 @@ const getAllDIDTxes = (req: Request, res: Response, next: NextFunction) => {
                     didTxes: results,
                     count: results.length
                 };
+                const isPremiumEndpoint = true;
+                const weight = 0;
                 accountFunction
-                    .handleAPILimit(conn, authTokenDecoded, true)
+                    .handleAPILimit(conn, authTokenDecoded, isPremiumEndpoint, weight)
                     .then((account) => {
                         if (account.error) {
                             return res.status(401).json(commonService.returnError(network, account.retCode, account.error));
@@ -208,8 +212,10 @@ const getDIDTxFromConfirmationId = (req: Request, res: Response, next: NextFunct
                 const data = {
                     didTx
                 };
+                const isPremiumEndpoint = false;
+                const weight = 0;
                 accountFunction
-                    .handleAPILimit(conn, authTokenDecoded, false)
+                    .handleAPILimit(conn, authTokenDecoded, isPremiumEndpoint, weight)
                     .then((account) => {
                         if (account.error) {
                             return res.status(401).json(commonService.returnError(network, account.retCode, account.error));
@@ -268,8 +274,10 @@ const getDIDTxStats = (req: Request, res: Response, next: NextFunction) => {
             return res.status(500).json(commonService.returnError(network, 500, stats.error));
         } else {
             const data = stats.data;
+            const isPremiumEndpoint = true;
+            const weight = 0;
             accountFunction
-                .handleAPILimit(conn, authTokenDecoded, true)
+                .handleAPILimit(conn, authTokenDecoded, isPremiumEndpoint, weight)
                 .then((account) => {
                     if (account.error) {
                         return res.status(401).json(commonService.returnError(network, account.retCode, account.error));
@@ -306,8 +314,10 @@ const getBlockInfoLatest = (req: Request, res: Response, next: NextFunction) => 
     const result: any = conn.models.LatestBlockchainState.findOne({ chain: config.blockchain.eidSidechain.name })
         .exec()
         .then((data) => {
+            const isPremiumEndpoint = false;
+            const weight = 0;
             accountFunction
-                .handleAPILimit(conn, authTokenDecoded, false)
+                .handleAPILimit(conn, authTokenDecoded, isPremiumEndpoint, weight)
                 .then((account) => {
                     if (account.error) {
                         return res.status(401).json(commonService.returnError(network, account.retCode, account.error));

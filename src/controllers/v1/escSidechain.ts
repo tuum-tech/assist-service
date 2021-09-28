@@ -20,8 +20,10 @@ const getBlockInfoLatest = (req: Request, res: Response, next: NextFunction) => 
     const result: any = conn.models.LatestBlockchainState.findOne({ chain: config.blockchain.escSidechain.name })
         .exec()
         .then((data) => {
+            const isPremiumEndpoint = false;
+            const weight = 0;
             accountFunction
-                .handleAPILimit(conn, authTokenDecoded, false)
+                .handleAPILimit(conn, authTokenDecoded, isPremiumEndpoint, weight)
                 .then((account) => {
                     if (account.error) {
                         return res.status(401).json(commonService.returnError(network, account.retCode, account.error));

@@ -2,6 +2,7 @@ import mongoose from 'mongoose';
 import config from '../../config/config';
 import logging from '../../config/logging';
 import rpcService from '../../services/v1/elaMainchainRpc';
+import externalService from '../../services/v1/external';
 import connMainnet from '../../connections/mainnet';
 import connTestnet from '../../connections/testnet';
 
@@ -32,37 +33,56 @@ function setLatestBlockInfo(network: string) {
                             chain: config.blockchain.elaMainchain.name,
                             network
                         });
-                    rpcService
-                        .getBlockInfoByHeight(network, height)
-                        .then((r: any) => {
-                            return r.data.block;
+                    externalService
+                        .getELAPriceCoinGecko()
+                        .then((rCoinGecko: any) => {
+                            if (rCoinGecko.data) {
+                                return rCoinGecko.data.elaPriceUsd;
+                            } else {
+                                const cmcPrice = externalService.getELAPriceCoinmarketcap().then((rCmc: any) => {
+                                    if (rCmc.data) {
+                                        return rCmc.data.elaPriceUsd;
+                                    } else {
+                                        return latestState.elaPriceUsd || 0;
+                                    }
+                                });
+                                return cmcPrice;
+                            }
                         })
-                        .then((block: any) => {
-                            latestState.height = height;
-                            latestState.block = block;
-                            latestState.miner = 'TBD';
-                            latestState.validator = {
-                                name: 'TBD',
-                                rank: Infinity,
-                                ownerKey: 'TBD',
-                                nodeKey: 'TBD',
-                                location: 'TBD',
-                                url: 'TBD',
-                                ip: 'TBD'
-                            };
-                            latestState.avgTxHourly = Infinity;
-                            latestState.accountsOverOneELA = Infinity;
-                            latestState.hashrate = 'TBD';
-                            latestState.numTx = block.tx.length;
-                            latestState.extraInfo = {
-                                rpcUrl,
-                                backupRpcUrl
-                            };
-                            latestState.save();
-                        })
-                        .catch((err: any) => {
-                            logging.error(NAMESPACE, 'Error while getting the latest block from the blockchain: ', err);
-                            return false;
+                        .then((elaPriceUsd) => {
+                            rpcService
+                                .getBlockInfoByHeight(network, height)
+                                .then((r: any) => {
+                                    return r.data.block;
+                                })
+                                .then((block: any) => {
+                                    latestState.height = height;
+                                    latestState.block = block;
+                                    latestState.miner = 'TBD';
+                                    latestState.validator = {
+                                        name: 'TBD',
+                                        rank: Infinity,
+                                        ownerKey: 'TBD',
+                                        nodeKey: 'TBD',
+                                        location: 'TBD',
+                                        url: 'TBD',
+                                        ip: 'TBD'
+                                    };
+                                    latestState.elaPriceUsd = elaPriceUsd;
+                                    latestState.avgTxHourly = Infinity;
+                                    latestState.accountsOverOneELA = Infinity;
+                                    latestState.hashrate = 'TBD';
+                                    latestState.numTx = block.tx.length;
+                                    latestState.extraInfo = {
+                                        rpcUrl,
+                                        backupRpcUrl
+                                    };
+                                    latestState.save();
+                                })
+                                .catch((err: any) => {
+                                    logging.error(NAMESPACE, 'Error while getting the latest block from the blockchain: ', err);
+                                    return false;
+                                });
                         });
                 })
                 .catch((err) => {

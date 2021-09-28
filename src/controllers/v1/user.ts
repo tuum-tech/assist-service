@@ -159,110 +159,6 @@ const login = (req: Request, res: Response, next: NextFunction) => {
         });
 };
 
-const getAllUsers = (req: Request, res: Response, next: NextFunction) => {
-    const authTokenDecoded = res.locals.jwt;
-
-    let network = req.query.network ? req.query.network.toString() : config.blockchain.mainnet;
-    if (!config.blockchain.validNetworks.includes(network)) network = config.blockchain.mainnet;
-
-    const conn = network === config.blockchain.testnet ? connTestnet : connMainnet;
-
-    const result: any = conn.models.User.find()
-        .select('-password')
-        .select('-balance')
-        .select('-orderId')
-        .exec()
-        .then((users) => {
-            const data = {
-                users,
-                count: users.length
-            };
-            accountFunction
-                .handleAPILimit(conn, authTokenDecoded, true)
-                .then((account) => {
-                    if (account.error) {
-                        return res.status(401).json(commonService.returnError(network, account.retCode, account.error));
-                    }
-                    const user: IUser = account.user;
-                    user.requests.premiumEndpoints.today += 1;
-                    user.requests.premiumEndpoints.all += 1;
-                    user.save().catch((error: any) => {
-                        logging.error(NAMESPACE, 'Error while trying to get all users: ', error);
-
-                        return res.status(500).json(commonService.returnError(network, 500, error));
-                    });
-                    return res.status(200).json(commonService.returnSuccess(network, 200, data));
-                })
-                .catch((error) => {
-                    logging.error(NAMESPACE, 'Error while trying to verify account API limit', error);
-
-                    return res.status(500).json(commonService.returnError(network, 500, error));
-                });
-        })
-        .catch((error) => {
-            logging.error(NAMESPACE, 'Error while trying to get all users: ', error);
-
-            return res.status(500).json(commonService.returnError(network, 500, error));
-        });
-    return result;
-};
-
-const getNewUserStats = (req: Request, res: Response, next: NextFunction) => {
-    const authTokenDecoded = res.locals.jwt;
-
-    let network = req.query.network ? req.query.network.toString() : config.blockchain.mainnet;
-    if (!config.blockchain.validNetworks.includes(network)) network = config.blockchain.mainnet;
-
-    const conn = network === config.blockchain.testnet ? connTestnet : connMainnet;
-
-    const dateString = req.query.created ? req.query.created.toString() : 'today';
-    let beginDate = commonFunction.getDateFromString(dateString);
-    if (beginDate == null) {
-        const error = 'Date can only be passed in the following format: [today|yesterday|all|YYYY-MM-DD]';
-        return res.status(500).json(commonService.returnError(network, 500, error));
-    }
-    const endDate = new Date(`${beginDate.getUTCFullYear()}-${('0' + (beginDate.getUTCMonth() + 1)).slice(-2)}-${('0' + beginDate.getUTCDate()).slice(-2)}`);
-    if (dateString === 'today' || dateString === 'yesterday') {
-        beginDate.setDate(beginDate.getDate() - 1);
-    } else if (dateString === 'all') {
-        beginDate = null;
-    } else {
-        endDate.setDate(endDate.getDate() + 1);
-    }
-
-    const result: any = userStats.getStats(network, beginDate, endDate).then((stats) => {
-        if (stats.error !== null) {
-            logging.error(NAMESPACE, 'Error while trying to get user stats: ', stats.error);
-            return res.status(500).json(commonService.returnError(network, 500, stats.error));
-        } else {
-            const data = stats.data;
-            accountFunction
-                .handleAPILimit(conn, authTokenDecoded, true)
-                .then((account) => {
-                    if (account.error) {
-                        return res.status(401).json(commonService.returnError(network, account.retCode, account.error));
-                    }
-                    const user: IUser = account.user;
-                    user.requests.premiumEndpoints.today += 1;
-                    user.requests.premiumEndpoints.all += 1;
-                    user.save().catch((error: any) => {
-                        logging.error(NAMESPACE, 'Error while trying to get user stats: ', error);
-
-                        return res.status(500).json(commonService.returnError(network, 500, error));
-                    });
-                    return res.status(200).json(commonService.returnSuccess(network, 200, data));
-                })
-                .catch((error) => {
-                    logging.error(NAMESPACE, 'Error while trying to verify account API limit', error);
-
-                    return res.status(500).json(commonService.returnError(network, 500, error));
-                });
-        }
-    });
-
-    return result;
-};
-
 const paymentCreateTx = (req: Request, res: Response, next: NextFunction) => {
     const authTokenDecoded = res.locals.jwt;
     const username = authTokenDecoded.username;
@@ -368,4 +264,112 @@ const paymentSignTx = (req: Request, res: Response, next: NextFunction) => {
     return result;
 };
 
-export default { validateToken, register, login, getAllUsers, getNewUserStats, paymentCreateTx, paymentSignTx };
+const getAllUsers = (req: Request, res: Response, next: NextFunction) => {
+    const authTokenDecoded = res.locals.jwt;
+
+    let network = req.query.network ? req.query.network.toString() : config.blockchain.mainnet;
+    if (!config.blockchain.validNetworks.includes(network)) network = config.blockchain.mainnet;
+
+    const conn = network === config.blockchain.testnet ? connTestnet : connMainnet;
+
+    const result: any = conn.models.User.find()
+        .select('-password')
+        .select('-balance')
+        .select('-orderId')
+        .exec()
+        .then((users) => {
+            const data = {
+                users,
+                count: users.length
+            };
+            const isPremiumEndpoint = true;
+            const weight = 0;
+            accountFunction
+                .handleAPILimit(conn, authTokenDecoded, isPremiumEndpoint, weight)
+                .then((account) => {
+                    if (account.error) {
+                        return res.status(401).json(commonService.returnError(network, account.retCode, account.error));
+                    }
+                    const user: IUser = account.user;
+                    user.requests.premiumEndpoints.today += 1;
+                    user.requests.premiumEndpoints.all += 1;
+                    user.save().catch((error: any) => {
+                        logging.error(NAMESPACE, 'Error while trying to get all users: ', error);
+
+                        return res.status(500).json(commonService.returnError(network, 500, error));
+                    });
+                    return res.status(200).json(commonService.returnSuccess(network, 200, data));
+                })
+                .catch((error) => {
+                    logging.error(NAMESPACE, 'Error while trying to verify account API limit', error);
+
+                    return res.status(500).json(commonService.returnError(network, 500, error));
+                });
+        })
+        .catch((error) => {
+            logging.error(NAMESPACE, 'Error while trying to get all users: ', error);
+
+            return res.status(500).json(commonService.returnError(network, 500, error));
+        });
+    return result;
+};
+
+const getNewUserStats = (req: Request, res: Response, next: NextFunction) => {
+    const authTokenDecoded = res.locals.jwt;
+
+    let network = req.query.network ? req.query.network.toString() : config.blockchain.mainnet;
+    if (!config.blockchain.validNetworks.includes(network)) network = config.blockchain.mainnet;
+
+    const conn = network === config.blockchain.testnet ? connTestnet : connMainnet;
+
+    const dateString = req.query.created ? req.query.created.toString() : 'today';
+    let beginDate = commonFunction.getDateFromString(dateString);
+    if (beginDate == null) {
+        const error = 'Date can only be passed in the following format: [today|yesterday|all|YYYY-MM-DD]';
+        return res.status(500).json(commonService.returnError(network, 500, error));
+    }
+    const endDate = new Date(`${beginDate.getUTCFullYear()}-${('0' + (beginDate.getUTCMonth() + 1)).slice(-2)}-${('0' + beginDate.getUTCDate()).slice(-2)}`);
+    if (dateString === 'today' || dateString === 'yesterday') {
+        beginDate.setDate(beginDate.getDate() - 1);
+    } else if (dateString === 'all') {
+        beginDate = null;
+    } else {
+        endDate.setDate(endDate.getDate() + 1);
+    }
+
+    const result: any = userStats.getStats(network, beginDate, endDate).then((stats) => {
+        if (stats.error !== null) {
+            logging.error(NAMESPACE, 'Error while trying to get user stats: ', stats.error);
+            return res.status(500).json(commonService.returnError(network, 500, stats.error));
+        } else {
+            const data = stats.data;
+            const isPremiumEndpoint = true;
+            const weight = 0;
+            accountFunction
+                .handleAPILimit(conn, authTokenDecoded, isPremiumEndpoint, weight)
+                .then((account) => {
+                    if (account.error) {
+                        return res.status(401).json(commonService.returnError(network, account.retCode, account.error));
+                    }
+                    const user: IUser = account.user;
+                    user.requests.premiumEndpoints.today += 1;
+                    user.requests.premiumEndpoints.all += 1;
+                    user.save().catch((error: any) => {
+                        logging.error(NAMESPACE, 'Error while trying to get user stats: ', error);
+
+                        return res.status(500).json(commonService.returnError(network, 500, error));
+                    });
+                    return res.status(200).json(commonService.returnSuccess(network, 200, data));
+                })
+                .catch((error) => {
+                    logging.error(NAMESPACE, 'Error while trying to verify account API limit', error);
+
+                    return res.status(500).json(commonService.returnError(network, 500, error));
+                });
+        }
+    });
+
+    return result;
+};
+
+export default { validateToken, register, login, paymentCreateTx, paymentSignTx, getAllUsers, getNewUserStats };
