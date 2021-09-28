@@ -174,6 +174,9 @@ function publishDIDTx(network: string) {
         })
         .catch((err) => {
             logging.error(NAMESPACE, 'Error while trying to run the cronjob to publish DID txes: ', err);
+            setTimeout(() => {
+                publishDIDTx(network);
+            }, 5000);
         });
 }
 

@@ -97,6 +97,9 @@ function setLatestBlockInfo(network: string) {
         })
         .catch((err) => {
             logging.error(NAMESPACE, 'Error while trying to run the cronjob to get latest block info: ', err);
+            setTimeout(() => {
+                setLatestBlockInfo(network);
+            }, 60000);
         });
 }
 
