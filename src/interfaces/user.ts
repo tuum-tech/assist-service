@@ -7,6 +7,7 @@ interface IEndpointStats {
 }
 
 interface IRequests {
+    totalAPICalls: number;
     freeEndpoints: IEndpointStats;
     premiumEndpoints: IEndpointStats;
 }

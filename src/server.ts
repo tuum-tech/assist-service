@@ -76,13 +76,13 @@ router.listen(config.server.port, () => {
     logging.info(NAMESPACE, `Assist Service is running on ${config.server.hostname}:${config.server.port}`);
 
     cronEIDSidechain.dailyCronjob(config.blockchain.mainnet);
-    cronEIDSidechain.dailyCronjob(config.blockchain.testnet);
+    /*cronEIDSidechain.dailyCronjob(config.blockchain.testnet); */
     cronEIDSidechain.publishDIDTx(config.blockchain.mainnet);
-    cronEIDSidechain.publishDIDTx(config.blockchain.testnet);
+    // cronEIDSidechain.publishDIDTx(config.blockchain.testnet);
 
-    cronESCSidechain.setLatestBlockInfo(config.blockchain.mainnet);
-    cronESCSidechain.setLatestBlockInfo(config.blockchain.testnet);
+    /* cronESCSidechain.setLatestBlockInfo(config.blockchain.mainnet);
+    cronESCSidechain.setLatestBlockInfo(config.blockchain.testnet); */
 
     cronELAMainchain.setLatestBlockInfo(config.blockchain.mainnet);
-    cronELAMainchain.setLatestBlockInfo(config.blockchain.testnet);
+    // cronELAMainchain.setLatestBlockInfo(config.blockchain.testnet);
 });

@@ -43,7 +43,7 @@ function setLatestBlockInfo(network: string) {
                                     if (rCmc.data) {
                                         return rCmc.data.elaPriceUsd;
                                     } else {
-                                        return latestState.elaPriceUsd || 0;
+                                        return latestState.elaPriceUsd || 0.1;
                                     }
                                 });
                                 return cmcPrice;

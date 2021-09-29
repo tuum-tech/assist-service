@@ -83,6 +83,7 @@ const register = (req: Request, res: Response, next: NextFunction) => {
                         password: hash,
                         accountType: config.user.freeAcountType.name,
                         requests: {
+                            totalAPICalls: 0,
                             freeEndpoints: {
                                 today: 0,
                                 all: 0,
@@ -283,22 +284,14 @@ const getAllUsers = (req: Request, res: Response, next: NextFunction) => {
                 count: users.length
             };
             const isPremiumEndpoint = true;
-            const weight = 0;
+            const weight = 1;
             accountFunction
                 .handleAPIQuota(conn, authTokenDecoded, isPremiumEndpoint, weight)
                 .then((account) => {
                     if (account.error) {
                         return res.status(401).json(commonService.returnError(network, account.retCode, account.error));
                     }
-                    const user: IUser = account.user;
-                    user.requests.premiumEndpoints.today += 1;
-                    user.requests.premiumEndpoints.all += 1;
-                    user.save().catch((error: any) => {
-                        logging.error(NAMESPACE, 'Error while trying to get all users: ', error);
-
-                        return res.status(500).json(commonService.returnError(network, 500, error));
-                    });
-                    return res.status(200).json(commonService.returnSuccess(network, 200, data));
+                    return res.status(200).json(commonService.returnSuccess(network, 200, data, account.quota));
                 })
                 .catch((error) => {
                     logging.error(NAMESPACE, 'Error while trying to verify account API quota', error);
@@ -344,22 +337,16 @@ const getNewUserStats = (req: Request, res: Response, next: NextFunction) => {
         } else {
             const data = stats.data;
             const isPremiumEndpoint = true;
-            const weight = 0;
+            const weight = 0.5;
             accountFunction
                 .handleAPIQuota(conn, authTokenDecoded, isPremiumEndpoint, weight)
                 .then((account) => {
                     if (account.error) {
+                        logging.error(NAMESPACE, 'Error while trying to get user stats: ', account.error);
+
                         return res.status(401).json(commonService.returnError(network, account.retCode, account.error));
                     }
-                    const user: IUser = account.user;
-                    user.requests.premiumEndpoints.today += 1;
-                    user.requests.premiumEndpoints.all += 1;
-                    user.save().catch((error: any) => {
-                        logging.error(NAMESPACE, 'Error while trying to get user stats: ', error);
-
-                        return res.status(500).json(commonService.returnError(network, 500, error));
-                    });
-                    return res.status(200).json(commonService.returnSuccess(network, 200, data));
+                    return res.status(200).json(commonService.returnSuccess(network, 200, data, account.quota));
                 })
                 .catch((error) => {
                     logging.error(NAMESPACE, 'Error while trying to verify account API quota', error);

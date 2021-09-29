@@ -30,9 +30,9 @@ async function handleRoute(url: string, body: any, headers: any, post: boolean =
     return response;
 }
 
-function returnSuccess(network: string, code: number, data: any) {
+function returnSuccess(network: string, code: number, data: any, quota?: any) {
     const response = {
-        meta: { code, message: 'OK', network },
+        meta: { code, message: 'OK', network, quota },
         data
     };
     return response;
