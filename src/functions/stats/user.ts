@@ -49,14 +49,14 @@ async function getStats(network: string, beginDate: any, endDate: Date, reset: b
                 if (user.did) {
                     generalUserStats.data.users[user.username].did = user.did;
                 }
-                if (reset === true && user.accountType === config.user.premiumAccountType) {
+                if (reset === true && (user.accountType === config.user.premiumAccountType || network === config.blockchain.testnet)) {
                     user.requests.today = 0;
                     const isLastDay = (dt: Date) => {
                         const test = new Date(dt.getTime());
-                        test.setDate(test.getDate() + 2);
+                        test.setDate(test.getDate() + 1);
                         return test.getDate() === 1;
                     };
-                    if (isLastDay(endDate) === true) {
+                    if (network === config.blockchain.testnet || isLastDay(endDate) === true) {
                         user.requests.exhaustedQuota = 0;
                     }
                     user.save();

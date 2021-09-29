@@ -106,12 +106,12 @@ const publishDIDTx = (req: Request, res: Response, next: NextFunction) => {
                                     didTx: _result
                                 };
                                 user.save();
-                                return res.status(201).json(commonService.returnSuccess(network, 200, data, account.quota));
+                                return res.status(200).json(commonService.returnSuccess(network, 200, data, account.quota));
                             })
                             .catch((error: any) => {
                                 logging.error(NAMESPACE, 'Error while trying to save the DID tx to the database: ', error);
 
-                                return commonService.returnError(network, 500, error);
+                                return res.status(500).json(commonService.returnError(network, 500, error));
                             });
                     })
                     .catch((error) => {
