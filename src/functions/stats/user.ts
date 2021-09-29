@@ -9,8 +9,11 @@ async function getStats(network: string, beginDate: any, endDate: Date, reset: b
     const conn = network === config.blockchain.testnet ? connTestnet : connMainnet;
     const generalUserStats: any = {
         data: {
-            freeAPI: 0,
-            premiumAPI: 0,
+            requests: {
+                today: 0,
+                all: 0,
+                exhaustedQuota: 0
+            },
             users: {},
             numUsers: 0
         },
@@ -31,21 +34,31 @@ async function getStats(network: string, beginDate: any, endDate: Date, reset: b
         .exec()
         .then((users) => {
             users.map((user) => {
-                const freeAPICountAll = user.requests.freeEndpoints.all;
-                const premiumAPICountAll = user.requests.premiumEndpoints.all;
-                generalUserStats.data.freeAPI += freeAPICountAll;
-                generalUserStats.data.premiumAPI += premiumAPICountAll;
+                const countToday = user.requests.today;
+                const countAll = user.requests.all;
+                const exhaustedQuota = user.requests.exhaustedQuota;
+                generalUserStats.data.requests.today += countToday;
+                generalUserStats.data.requests.all += countAll;
+                generalUserStats.data.requests.exhaustedQuota += exhaustedQuota;
                 generalUserStats.data.numUsers += 1;
                 generalUserStats.data.users[user.username] = {
-                    freeAPI: freeAPICountAll,
-                    premiumAPI: premiumAPICountAll
+                    today: countToday,
+                    all: countAll,
+                    exhaustedQuota
                 };
                 if (user.did) {
                     generalUserStats.data.users[user.username].did = user.did;
                 }
-                if (reset) {
-                    user.requests.freeEndpoints.today = 0;
-                    user.requests.premiumEndpoints.today = 0;
+                if (reset === true && user.accountType === config.user.premiumAccountType) {
+                    user.requests.today = 0;
+                    const isLastDay = (dt: Date) => {
+                        const test = new Date(dt.getTime());
+                        test.setDate(test.getDate() + 2);
+                        return test.getDate() === 1;
+                    };
+                    if (isLastDay(endDate) === true) {
+                        user.requests.exhaustedQuota = 0;
+                    }
                     user.save();
                 }
             });

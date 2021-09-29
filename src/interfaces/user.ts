@@ -1,15 +1,10 @@
 import { Document } from 'mongoose';
 
-interface IEndpointStats {
+interface IRequests {
     today: number;
     all: number;
-    dailyQuota: number;
-}
-
-interface IRequests {
-    totalAPICalls: number;
-    freeEndpoints: IEndpointStats;
-    premiumEndpoints: IEndpointStats;
+    exhaustedQuota: number;
+    totalQuota: number;
 }
 
 export default interface IUser extends Document {

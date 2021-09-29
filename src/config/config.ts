@@ -55,17 +55,10 @@ const MONGO = {
 
 const USER = {
     defaultUsername: 'defaultUser',
-    freeAcountType: {
-        name: 'free',
-        freeEndpointsDailyQuota: 2,
-        premiumEndpointsDailyQuota: 1
-    },
-    premiumAccountType: {
-        name: 'premium',
-        balance: 0,
-        freeEndpointsDailyQuota: 4,
-        premiumEndpointsDailyQuota: 2
-    }
+    freeAcountType: 'free',
+    premiumAccountType: 'premium',
+    freeAccountQuota: 1,
+    premiumAccountQuota: 2
 };
 
 const DEFAULT_WALLET =

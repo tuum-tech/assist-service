@@ -20,23 +20,14 @@ const getBlockInfoLatest = (req: Request, res: Response, next: NextFunction) => 
     const result: any = conn.models.LatestBlockchainState.findOne({ chain: config.blockchain.elaMainchain.name })
         .exec()
         .then((data) => {
-            const isPremiumEndpoint = false;
-            const weight = 0;
+            const costInUsd = 0.001;
             accountFunction
-                .handleAPIQuota(conn, authTokenDecoded, isPremiumEndpoint, weight)
+                .handleAPIQuota(conn, authTokenDecoded, costInUsd)
                 .then((account) => {
                     if (account.error) {
-                        return res.status(401).json(commonService.returnError(network, account.retCode, account.error));
+                        return res.status(account.retCode).json(commonService.returnError(network, account.retCode, account.error));
                     }
-                    const user: IUser = account.user;
-                    user.requests.premiumEndpoints.today += 1;
-                    user.requests.premiumEndpoints.all += 1;
-                    user.save().catch((error: any) => {
-                        logging.error(NAMESPACE, 'Error while trying to get the latest block info: ', error);
-
-                        return res.status(500).json(commonService.returnError(config.blockchain.mainnet, 500, error));
-                    });
-                    return res.status(200).json(commonService.returnSuccess(network, 200, data));
+                    return res.status(200).json(commonService.returnSuccess(network, 200, data, account.quota));
                 })
                 .catch((error) => {
                     logging.error(NAMESPACE, 'Error while trying to verify account API quota', error);

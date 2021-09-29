@@ -9,17 +9,10 @@ const UserSchema: Schema = new Schema(
         balance: { type: Number, required: false },
         orderId: { type: String, required: false },
         requests: {
-            totalAPICalls: { type: Number, required: true },
-            freeEndpoints: {
-                today: { type: Number, required: true },
-                all: { type: Number, required: true },
-                dailyQuota: { type: Number, required: true }
-            },
-            premiumEndpoints: {
-                today: { type: Number, required: true },
-                all: { type: Number, required: true },
-                dailyQuota: { type: Number, required: true }
-            }
+            today: { type: Number, required: true },
+            all: { type: Number, required: true },
+            exhaustedQuota: { type: Number, required: true },
+            totalQuota: { type: Number, required: true }
         }
     },
     {

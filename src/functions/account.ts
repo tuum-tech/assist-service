@@ -6,7 +6,7 @@ import externalService from '../services/v1/external';
 
 const NAMESPACE = 'Function: Account';
 
-async function handleAPIQuota(conn: mongoose.Connection, authTokenDecoded: any, isPremiumEndpoint: boolean = false, cost: number) {
+async function handleAPIQuota(conn: mongoose.Connection, authTokenDecoded: any, costInUsd: number) {
     const username = authTokenDecoded.username;
 
     const user = {} as IUser;
@@ -14,11 +14,12 @@ async function handleAPIQuota(conn: mongoose.Connection, authTokenDecoded: any, 
         user,
         quota: {
             elaPriceUsed: `$${0}`,
-            cost: `$${cost}`,
+            endpointCost: `$${costInUsd}`,
             quotaFormula: `cost / currentElaPrice`,
             exhaustedQuota: 0,
             remainingQuota: 0,
-            totalQuota: 0
+            totalQuota: 0,
+            balanceInAccount: '0 ELA; Upgrade to premium account to deposit ELA that will increase your total quota'
         },
         retCode: 200,
         error: ''
@@ -28,49 +29,36 @@ async function handleAPIQuota(conn: mongoose.Connection, authTokenDecoded: any, 
         .exec()
         .then(async (u) => {
             result.user = u;
-            const currentQuotaReached: number = isPremiumEndpoint ? result.user.requests.premiumEndpoints.today : result.user.requests.freeEndpoints.today;
-            const dailyEndpointQuota = isPremiumEndpoint ? result.user.requests.premiumEndpoints.dailyQuota : result.user.requests.freeEndpoints.dailyQuota;
+            const exhaustedQuota: number = result.user.requests.exhaustedQuota;
+            const totalQuota: number = result.user.requests.totalQuota;
             const quotaToExhaust = await conn.models.LatestBlockchainState.findOne({ chain: config.blockchain.elaMainchain.name })
                 .exec()
                 .then((state) => {
                     result.quota.elaPriceUsed = `$${state.elaPriceUsd}`;
-                    return Number((cost / state.elaPriceUsd).toFixed(5));
+                    return Number((costInUsd / state.elaPriceUsd).toFixed(5));
                 });
             result.quota.exhaustedQuota = quotaToExhaust;
 
-            result.user.requests.premiumEndpoints.today += quotaToExhaust;
-            result.user.requests.premiumEndpoints.all += quotaToExhaust;
-            result.user.requests.totalAPICalls += 1;
-            result.user.save().catch((error: any) => {
-                logging.error(NAMESPACE, 'Error while trying to save exhausted quota to the database: ', error);
+            result.quota.totalQuota = totalQuota;
+            result.quota.remainingQuota = Number((totalQuota - (exhaustedQuota + quotaToExhaust)).toFixed(5));
 
-                result.error = error;
-                result.retCode = 500;
-
-                return result;
-            });
-
-            result.quota.totalQuota = dailyEndpointQuota;
-            result.quota.remainingQuota = dailyEndpointQuota - (currentQuotaReached + quotaToExhaust);
-
-            if (result.user.accountType === config.user.premiumAccountType.name) {
+            if (result.user.accountType === config.user.premiumAccountType) {
                 result.quota.totalQuota = result.quota.totalQuota + result.user.balance;
                 result.quota.remainingQuota = result.quota.remainingQuota + result.user.balance;
             }
 
-            if (currentQuotaReached >= dailyEndpointQuota) {
-                if (result.user.accountType === config.user.premiumAccountType.name) {
-                    const balance = result.user.balance;
-                    if (balance < quotaToExhaust) {
+            if (exhaustedQuota >= totalQuota) {
+                if (result.user.accountType === config.user.premiumAccountType) {
+                    if (result.user.balance < quotaToExhaust) {
                         const error =
-                            'The user "' +
-                            result.user.username +
-                            '" has exhausted their daily quota for premium API endpoints and does not have enough balance on their account to execute this API call. ' +
-                            'Balance on account: ' +
-                            balance +
-                            ' ELA. Required ELA: ' +
+                            'You have exhausted your monthly quota and do not have enough balance on your account to execute this API call. ' +
+                            'Cost of this API call: ' +
                             quotaToExhaust +
-                            ' ELA';
+                            ' Your remaining Quota: ' +
+                            (totalQuota - exhaustedQuota) +
+                            'Balance on account: ' +
+                            result.user.balance +
+                            ' ELA. ';
                         logging.error(NAMESPACE, 'Error while trying to authenticate: ', error);
 
                         result.error = error;
@@ -79,8 +67,16 @@ async function handleAPIQuota(conn: mongoose.Connection, authTokenDecoded: any, 
                         return result;
                     }
                     result.user.balance -= quotaToExhaust;
+                    result.quota.balanceInAccount = `${result.user.balance} ELA`;
                 } else {
-                    const error = 'The user "' + result.user.username + '" has reached the daily API call quota of ' + dailyEndpointQuota;
+                    const error =
+                        'You have exhausted your allocated quota of ' +
+                        totalQuota +
+                        '. Please upgrade your account to a premium account(which is free to do by the way) before proceeding. ' +
+                        'Cost of this API call: ' +
+                        quotaToExhaust +
+                        ' Your remaining Quota: ' +
+                        (totalQuota - exhaustedQuota);
                     logging.error(NAMESPACE, 'Error while trying to authenticate: ', error);
 
                     result.error = error;
@@ -89,6 +85,10 @@ async function handleAPIQuota(conn: mongoose.Connection, authTokenDecoded: any, 
                     return result;
                 }
             }
+            result.user.requests.exhaustedQuota += quotaToExhaust;
+            result.user.requests.today += 1;
+            result.user.requests.all += 1;
+            result.user.save();
         })
         .catch((error: any) => {
             logging.error(NAMESPACE, 'Error while trying to validate the user: ', error);

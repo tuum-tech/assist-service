@@ -81,19 +81,12 @@ const register = (req: Request, res: Response, next: NextFunction) => {
                         _id: new mongoose.Types.ObjectId(),
                         username,
                         password: hash,
-                        accountType: config.user.freeAcountType.name,
+                        accountType: config.user.freeAcountType,
                         requests: {
-                            totalAPICalls: 0,
-                            freeEndpoints: {
-                                today: 0,
-                                all: 0,
-                                dailyQuota: network === config.blockchain.testnet ? config.user.premiumAccountType.freeEndpointsDailyQuota : config.user.freeAcountType.freeEndpointsDailyQuota
-                            },
-                            premiumEndpoints: {
-                                today: 0,
-                                all: 0,
-                                dailyQuota: network === config.blockchain.testnet ? config.user.premiumAccountType.premiumEndpointsDailyQuota : config.user.freeAcountType.premiumEndpointsDailyQuota
-                            }
+                            today: 0,
+                            all: 0,
+                            exhaustedQuota: 0,
+                            totalQuota: config.user.freeAccountQuota
                         }
                     });
 
@@ -170,7 +163,7 @@ const paymentCreateTx = (req: Request, res: Response, next: NextFunction) => {
         .select('-password')
         .exec()
         .then((user: IUser) => {
-            if (user.accountType !== config.user.premiumAccountType.name || !user.did) {
+            if (user.accountType !== config.user.premiumAccountType || !user.did) {
                 const error =
                     'Error while trying to create a payment transaction because this account is not a premium account type. Please upgrade your account from free to premium first with /v1/eidSidechain/publish/didTx API endpoint and setting the flag "upgradeAccount" to true. You can rerun this API after the upgrade is complete.';
                 return res.status(401).json(commonService.returnError(config.blockchain.mainnet, 401, error));
@@ -185,11 +178,7 @@ const paymentCreateTx = (req: Request, res: Response, next: NextFunction) => {
                     'Put the orderId as part of the memo using Essentials Wallet and send some ELA to the given address on the ELA mainchain, then proceed with the /v1/users/payment/signTx API endpoint to complete the transaction.'
             };
             user.orderId = orderId;
-            user.save().catch((error: any) => {
-                logging.error(NAMESPACE, 'Error while trying to create a payment order to top up the account: ', error);
-
-                return res.status(500).json(commonService.returnError(config.blockchain.mainnet, 500, error));
-            });
+            user.save();
             return res.status(200).json(commonService.returnSuccess(config.blockchain.mainnet, 200, data));
         })
         .catch((error: any) => {
@@ -212,7 +201,7 @@ const paymentSignTx = (req: Request, res: Response, next: NextFunction) => {
         .select('-password')
         .exec()
         .then((user: IUser) => {
-            if (user.accountType !== config.user.premiumAccountType.name || !user.did) {
+            if (user.accountType !== config.user.premiumAccountType || !user.did) {
                 const error =
                     'Error while trying to create a payment transaction because this account is not a premium account type. Please upgrade your account from free to premium first with /v1/eidSidechain/publish/didTx API endpoint and setting the flag "upgradeAccount" to true. You can then create a payment transaction with /v1/users/payment/createTx API endpoint before proceeding and finally this /v1/users/payment/signTx API endpoint to complete the order.';
                 return res.status(401).json(commonService.returnError(config.blockchain.mainnet, 401, error));
@@ -240,11 +229,7 @@ const paymentSignTx = (req: Request, res: Response, next: NextFunction) => {
                     user.balance += amount;
                     user.balance = Number(user.balance.toFixed(8));
                     user.orderId = '';
-                    user.save().catch((error: any) => {
-                        logging.error(NAMESPACE, 'Error while trying to sign the payment order to top up the account: ', error);
-
-                        return res.status(500).json(commonService.returnError(config.blockchain.mainnet, 500, error));
-                    });
+                    user.save();
                     const data = {
                         amountAdded: amount,
                         newBalance: user.balance
@@ -283,13 +268,12 @@ const getAllUsers = (req: Request, res: Response, next: NextFunction) => {
                 users,
                 count: users.length
             };
-            const isPremiumEndpoint = true;
-            const weight = 1;
+            const costInUsd = 0.1;
             accountFunction
-                .handleAPIQuota(conn, authTokenDecoded, isPremiumEndpoint, weight)
+                .handleAPIQuota(conn, authTokenDecoded, costInUsd)
                 .then((account) => {
                     if (account.error) {
-                        return res.status(401).json(commonService.returnError(network, account.retCode, account.error));
+                        return res.status(account.retCode).json(commonService.returnError(network, account.retCode, account.error));
                     }
                     return res.status(200).json(commonService.returnSuccess(network, 200, data, account.quota));
                 })
@@ -321,14 +305,12 @@ const getNewUserStats = (req: Request, res: Response, next: NextFunction) => {
         const error = 'Date can only be passed in the following format: [today|yesterday|all|YYYY-MM-DD]';
         return res.status(500).json(commonService.returnError(network, 500, error));
     }
+    beginDate = new Date(`${beginDate.getUTCFullYear()}-${('0' + (beginDate.getUTCMonth() + 1)).slice(-2)}-${('0' + beginDate.getUTCDate()).slice(-2)}`);
     const endDate = new Date(`${beginDate.getUTCFullYear()}-${('0' + (beginDate.getUTCMonth() + 1)).slice(-2)}-${('0' + beginDate.getUTCDate()).slice(-2)}`);
-    if (dateString === 'today' || dateString === 'yesterday') {
-        beginDate.setDate(beginDate.getDate() - 1);
-    } else if (dateString === 'all') {
+    if (dateString === 'all') {
         beginDate = null;
-    } else {
-        endDate.setDate(endDate.getDate() + 1);
     }
+    endDate.setDate(endDate.getDate() + 1);
 
     const result: any = userStats.getStats(network, beginDate, endDate).then((stats) => {
         if (stats.error !== null) {
@@ -336,15 +318,17 @@ const getNewUserStats = (req: Request, res: Response, next: NextFunction) => {
             return res.status(500).json(commonService.returnError(network, 500, stats.error));
         } else {
             const data = stats.data;
-            const isPremiumEndpoint = true;
-            const weight = 0.5;
+            let costInUsd = 0.001;
+            if (dateString === 'all') {
+                costInUsd = 0.01;
+            }
             accountFunction
-                .handleAPIQuota(conn, authTokenDecoded, isPremiumEndpoint, weight)
+                .handleAPIQuota(conn, authTokenDecoded, costInUsd)
                 .then((account) => {
                     if (account.error) {
                         logging.error(NAMESPACE, 'Error while trying to get user stats: ', account.error);
 
-                        return res.status(401).json(commonService.returnError(network, account.retCode, account.error));
+                        return res.status(account.retCode).json(commonService.returnError(network, account.retCode, account.error));
                     }
                     return res.status(200).json(commonService.returnSuccess(network, 200, data, account.quota));
                 })

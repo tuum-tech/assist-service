@@ -187,9 +187,10 @@ async function dailyCronjob(network: string) {
         async () => {
             logging.info(NAMESPACE, `Started cronjob: dailyCronjob: ${network}`);
 
-            const beginDate = new Date();
-            const endDate = new Date(`${beginDate.getUTCFullYear()}-${('0' + (beginDate.getUTCMonth() + 1)).slice(-2)}-${('0' + beginDate.getUTCDate()).slice(-2)}`);
+            let beginDate = new Date();
+            beginDate = new Date(`${beginDate.getUTCFullYear()}-${('0' + (beginDate.getUTCMonth() + 1)).slice(-2)}-${('0' + beginDate.getUTCDate()).slice(-2)}`);
             beginDate.setDate(beginDate.getDate() - 1);
+            const endDate = new Date(`${beginDate.getUTCFullYear()}-${('0' + (beginDate.getUTCMonth() + 1)).slice(-2)}-${('0' + beginDate.getUTCDate()).slice(-2)}`);
 
             const conn = network === config.blockchain.testnet ? connTestnet : connMainnet;
 
@@ -280,17 +281,15 @@ async function dailyCronjob(network: string) {
 
                 let generalUserStatsHtml: string = `<table><tr><th></th><th>Today</th><th>All time</th></tr>`;
                 generalUserStatsHtml += `<tr><th>Number of Users</th><th>${generalUserStatsToday.data.numUsers}</th><th>${generalUserStatsAll.data.numUsers}</th></tr></table><br>`;
-
-                generalUserStatsHtml += `<table><tr><th>Endpoint Type</th><th>Today</th><th>All time</th></tr>`;
-                generalUserStatsHtml += `<tr><td>Free</td><td>${generalUserStatsToday.data.freeAPI}</td><td>${generalUserStatsAll.data.freeAPI}</td></tr>`;
-                generalUserStatsHtml += `<tr><td>Premium</td><td>${generalUserStatsToday.data.premiumAPI}</td><td>${generalUserStatsAll.data.premiumAPI}</td></tr></table><br>`;
+                generalUserStatsHtml += `<tr><th>Number of API calls</th><th>${generalUserStatsToday.data.requests.today}</th><th>${generalUserStatsAll.data.requests.all}</th></tr></table><br>`;
+                generalUserStatsHtml += `<tr><th>Weight of API calls</th><th>${generalUserStatsToday.data.requests.exhaustedQuota}</th><th>${generalUserStatsAll.data.requests.exhaustedQuota}</th></tr></table><br>`;
 
                 if (generalUserStatsToday.data.numUsers > 0) {
-                    generalUserStatsHtml += `<table><tr><th>New User Today</th><th>DID</th><th>Free Endpoints</th><th>Premium Endpoints</th></tr>`;
+                    generalUserStatsHtml += `<table><tr><th>New User Today</th><th>DID</th><th>Number of API calls</th><th>Weight of API calls</th></tr>`;
                 }
                 for (const username in generalUserStatsToday.data.users) {
                     if (generalUserStatsToday.data.users.hasOwnProperty(username)) {
-                        generalUserStatsHtml += `<tr><td>${username}</td><td>${generalUserStatsToday.data.users[username].did}</td><td>${generalUserStatsToday.data.users[username].freeAPI}</td><td>${generalUserStatsToday.data.users[username].premiumAPI}</td></tr>`;
+                        generalUserStatsHtml += `<tr><td>${username}</td><td>${generalUserStatsToday.data.users[username].did}</td><td>${generalUserStatsToday.data.users[username].today}</td><td>${generalUserStatsToday.data.users[username].all}</td></tr>`;
                     }
                 }
                 generalUserStatsHtml += `</table>`;

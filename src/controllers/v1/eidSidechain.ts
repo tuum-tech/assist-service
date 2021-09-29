@@ -62,20 +62,18 @@ const publishDIDTx = (req: Request, res: Response, next: NextFunction) => {
             } else {
                 const conn = network === config.blockchain.testnet ? connTestnet : connMainnet;
 
-                const isPremiumEndpoint = true;
-                const weight = 0;
+                const costInUsd = 0.01;
                 accountFunction
-                    .handleAPIQuota(conn, authTokenDecoded, isPremiumEndpoint, weight)
+                    .handleAPIQuota(conn, authTokenDecoded, costInUsd)
                     .then((account) => {
                         if (account.error) {
-                            return res.status(401).json(commonService.returnError(network, account.retCode, account.error));
+                            return res.status(account.retCode).json(commonService.returnError(network, account.retCode, account.error));
                         }
                         const user: IUser = account.user;
                         if (Boolean(upgradeAccount) === true) {
-                            if (user.accountType !== config.user.premiumAccountType.name) {
-                                user.accountType = config.user.premiumAccountType.name;
-                                user.requests.freeEndpoints.dailyQuota = config.user.premiumAccountType.freeEndpointsDailyQuota;
-                                user.requests.premiumEndpoints.dailyQuota = config.user.premiumAccountType.premiumEndpointsDailyQuota;
+                            if (user.accountType !== config.user.premiumAccountType) {
+                                user.accountType = config.user.premiumAccountType;
+                                user.requests.totalQuota = config.user.premiumAccountQuota;
                                 user.balance = 0;
                             }
                             user.did = did;
@@ -107,14 +105,8 @@ const publishDIDTx = (req: Request, res: Response, next: NextFunction) => {
                                 const data = {
                                     didTx: _result
                                 };
-                                user.requests.premiumEndpoints.today += 1;
-                                user.requests.premiumEndpoints.all += 1;
-                                user.save().catch((error: any) => {
-                                    logging.error(NAMESPACE, 'Error while trying to sign the transaction: ', error);
-
-                                    return res.status(500).json(commonService.returnError(config.blockchain.mainnet, 500, error));
-                                });
-                                return res.status(201).json(commonService.returnSuccess(network, 200, data));
+                                user.save();
+                                return res.status(201).json(commonService.returnSuccess(network, 200, data, account.quota));
                             })
                             .catch((error: any) => {
                                 logging.error(NAMESPACE, 'Error while trying to save the DID tx to the database: ', error);
@@ -158,23 +150,14 @@ const getAllDIDTxes = (req: Request, res: Response, next: NextFunction) => {
                     didTxes: results,
                     count: results.length
                 };
-                const isPremiumEndpoint = true;
-                const weight = 0;
+                const costInUsd = 0.25;
                 accountFunction
-                    .handleAPIQuota(conn, authTokenDecoded, isPremiumEndpoint, weight)
+                    .handleAPIQuota(conn, authTokenDecoded, costInUsd)
                     .then((account) => {
                         if (account.error) {
-                            return res.status(401).json(commonService.returnError(network, account.retCode, account.error));
+                            return res.status(account.retCode).json(commonService.returnError(network, account.retCode, account.error));
                         }
-                        const user: IUser = account.user;
-                        user.requests.premiumEndpoints.today += 1;
-                        user.requests.premiumEndpoints.all += 1;
-                        user.save().catch((error: any) => {
-                            logging.error(NAMESPACE, 'Error while trying to get all the DID transactions: ', error);
-
-                            return res.status(500).json(commonService.returnError(config.blockchain.mainnet, 500, error));
-                        });
-                        return res.status(200).json(commonService.returnSuccess(network, 200, data));
+                        return res.status(200).json(commonService.returnSuccess(network, 200, data, account.quota));
                     })
                     .catch((error) => {
                         logging.error(NAMESPACE, 'Error while trying to verify account API quota', error);
@@ -212,23 +195,14 @@ const getDIDTxFromConfirmationId = (req: Request, res: Response, next: NextFunct
                 const data = {
                     didTx
                 };
-                const isPremiumEndpoint = false;
-                const weight = 0;
+                const costInUsd = 0.0001;
                 accountFunction
-                    .handleAPIQuota(conn, authTokenDecoded, isPremiumEndpoint, weight)
+                    .handleAPIQuota(conn, authTokenDecoded, costInUsd)
                     .then((account) => {
                         if (account.error) {
-                            return res.status(401).json(commonService.returnError(network, account.retCode, account.error));
+                            return res.status(account.retCode).json(commonService.returnError(network, account.retCode, account.error));
                         }
-                        const user: IUser = account.user;
-                        user.requests.freeEndpoints.today += 1;
-                        user.requests.freeEndpoints.all += 1;
-                        user.save().catch((error: any) => {
-                            logging.error(NAMESPACE, 'Error while trying to get a DID transaction from confirmationId: ', error);
-
-                            return res.status(500).json(commonService.returnError(config.blockchain.mainnet, 500, error));
-                        });
-                        return res.status(200).json(commonService.returnSuccess(network, 200, data));
+                        return res.status(200).json(commonService.returnSuccess(network, 200, data, account.quota));
                     })
                     .catch((error) => {
                         logging.error(NAMESPACE, 'Error while trying to verify account API quota', error);
@@ -259,14 +233,12 @@ const getDIDTxStats = (req: Request, res: Response, next: NextFunction) => {
         const error = 'Date can only be passed in the following format: [today|yesterday|all|YYYY-MM-DD]';
         return res.status(500).json(commonService.returnError(network, 500, error));
     }
+    beginDate = new Date(`${beginDate.getUTCFullYear()}-${('0' + (beginDate.getUTCMonth() + 1)).slice(-2)}-${('0' + beginDate.getUTCDate()).slice(-2)}`);
     const endDate = new Date(`${beginDate.getUTCFullYear()}-${('0' + (beginDate.getUTCMonth() + 1)).slice(-2)}-${('0' + beginDate.getUTCDate()).slice(-2)}`);
-    if (dateString === 'today' || dateString === 'yesterday') {
-        beginDate.setDate(beginDate.getDate() - 1);
-    } else if (dateString === 'all') {
+    if (dateString === 'all') {
         beginDate = null;
-    } else {
-        endDate.setDate(endDate.getDate() + 1);
     }
+    endDate.setDate(endDate.getDate() + 1);
 
     const result: any = eidSidechainStats.getTxStats(network, beginDate, endDate).then((stats) => {
         if (stats.error !== null) {
@@ -274,23 +246,17 @@ const getDIDTxStats = (req: Request, res: Response, next: NextFunction) => {
             return res.status(500).json(commonService.returnError(network, 500, stats.error));
         } else {
             const data = stats.data;
-            const isPremiumEndpoint = true;
-            const weight = 0;
+            let costInUsd = 0.001;
+            if (dateString === 'all') {
+                costInUsd = 0.1;
+            }
             accountFunction
-                .handleAPIQuota(conn, authTokenDecoded, isPremiumEndpoint, weight)
+                .handleAPIQuota(conn, authTokenDecoded, costInUsd)
                 .then((account) => {
                     if (account.error) {
-                        return res.status(401).json(commonService.returnError(network, account.retCode, account.error));
+                        return res.status(account.retCode).json(commonService.returnError(network, account.retCode, account.error));
                     }
-                    const user: IUser = account.user;
-                    user.requests.premiumEndpoints.today += 1;
-                    user.requests.premiumEndpoints.all += 1;
-                    user.save().catch((error: any) => {
-                        logging.error(NAMESPACE, 'Error while trying to get DID tx stats: ', error);
-
-                        return res.status(500).json(commonService.returnError(config.blockchain.mainnet, 500, error));
-                    });
-                    return res.status(200).json(commonService.returnSuccess(network, 200, data));
+                    return res.status(200).json(commonService.returnSuccess(network, 200, data, account.quota));
                 })
                 .catch((error) => {
                     logging.error(NAMESPACE, 'Error while trying to verify account API quota', error);
@@ -314,23 +280,14 @@ const getBlockInfoLatest = (req: Request, res: Response, next: NextFunction) => 
     const result: any = conn.models.LatestBlockchainState.findOne({ chain: config.blockchain.eidSidechain.name })
         .exec()
         .then((data) => {
-            const isPremiumEndpoint = false;
-            const weight = 0;
+            const costInUsd = 0.001;
             accountFunction
-                .handleAPIQuota(conn, authTokenDecoded, isPremiumEndpoint, weight)
+                .handleAPIQuota(conn, authTokenDecoded, costInUsd)
                 .then((account) => {
                     if (account.error) {
-                        return res.status(401).json(commonService.returnError(network, account.retCode, account.error));
+                        return res.status(account.retCode).json(commonService.returnError(network, account.retCode, account.error));
                     }
-                    const user: IUser = account.user;
-                    user.requests.premiumEndpoints.today += 1;
-                    user.requests.premiumEndpoints.all += 1;
-                    user.save().catch((error: any) => {
-                        logging.error(NAMESPACE, 'Error while trying to get the latest block info: ', error);
-
-                        return res.status(500).json(commonService.returnError(config.blockchain.mainnet, 500, error));
-                    });
-                    return res.status(200).json(commonService.returnSuccess(network, 200, data));
+                    return res.status(200).json(commonService.returnSuccess(network, 200, data, account.quota));
                 })
                 .catch((error) => {
                     logging.error(NAMESPACE, 'Error while trying to verify account API quota', error);
