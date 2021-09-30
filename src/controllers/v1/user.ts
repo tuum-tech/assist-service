@@ -268,7 +268,7 @@ const getAllUsers = (req: Request, res: Response, next: NextFunction) => {
                 users,
                 count: users.length
             };
-            const costInUsd = 0.1;
+            const costInUsd = 0.01;
             accountFunction
                 .handleAPIQuota(conn, authTokenDecoded, costInUsd)
                 .then((account) => {
