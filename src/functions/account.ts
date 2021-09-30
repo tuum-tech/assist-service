@@ -45,6 +45,7 @@ async function handleAPIQuota(conn: mongoose.Connection, authTokenDecoded: any, 
             if (result.user.accountType === config.user.premiumAccountType) {
                 result.quota.totalQuota = result.quota.totalQuota + result.user.balance;
                 result.quota.remainingQuota = result.quota.remainingQuota + result.user.balance;
+                result.quota.balanceInAccount = `${result.user.balance} ELA`;
             }
 
             if (exhaustedQuota >= totalQuota) {

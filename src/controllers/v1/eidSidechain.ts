@@ -150,7 +150,7 @@ const getAllDIDTxes = (req: Request, res: Response, next: NextFunction) => {
                     didTxes: results,
                     count: results.length
                 };
-                const costInUsd = 0.25;
+                const costInUsd = 0.1;
                 accountFunction
                     .handleAPIQuota(conn, authTokenDecoded, costInUsd)
                     .then((account) => {
@@ -248,7 +248,7 @@ const getDIDTxStats = (req: Request, res: Response, next: NextFunction) => {
             const data = stats.data;
             let costInUsd = 0.001;
             if (dateString === 'all') {
-                costInUsd = 0.1;
+                costInUsd = 0.01;
             }
             accountFunction
                 .handleAPIQuota(conn, authTokenDecoded, costInUsd)
