@@ -70,7 +70,7 @@ const publishDIDTx = (req: Request, res: Response, next: NextFunction) => {
                             return res.status(account.retCode).json(commonService.returnError(network, account.retCode, account.error));
                         }
                         const user: IUser = account.user;
-                        if (Boolean(upgradeAccount) === true) {
+                        if (network === config.blockchain.mainnet && Boolean(upgradeAccount) === true) {
                             if (user.accountType !== config.user.premiumAccountType) {
                                 user.accountType = config.user.premiumAccountType;
                                 user.requests.totalQuota = config.user.premiumAccountQuota;
