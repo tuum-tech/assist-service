@@ -35,7 +35,7 @@ cd assist-service;
 
 # API Endpoints
 
-For detailed deep-dive of all the API endpionts, you can check out [Tuum Documentation](https://docs.tuum.tech/tuum-tech/assist-service). You can also find the same documentation below.
+For detailed deep-dive of all the API endpionts, you can check out [Assist Service Documentation](https://docs.tuum.tech/assist-service).
 
 ## Healthcheck
 
@@ -52,23 +52,3 @@ Return:
     Success: { '_status': 'OK', 'message': 'pong' }
     Failure: { '_status': 'ERR', '_error': { 'code': 404, 'message': 'err_message' } }
 ```
-
-## Authentication
-
-Read more on [Authentication APIs](./docs/authentication.md)
-
-## User Data
-
-Read more on [User Data APIs](./docs/user_data.md)
-
-## Elastos ID Sidechain
-
-Read more on [Elastos ID Sidechain APIs](./docs/eid_sidechain.md)
-
-## Elastos Smart Contract Sidechain
-
-Read more on [Elastos Smart Contract Sidechain APIs](./docs/esc_sidechain.md)
-
-## Elastos Mainchain
-
-Read more on [Elastos Mainchain APIs](./docs/ela_mainchain.md)
