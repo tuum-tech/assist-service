@@ -62,7 +62,7 @@ const publishDIDTx = (req: Request, res: Response, next: NextFunction) => {
             } else {
                 const conn = network === config.blockchain.testnet ? connTestnet : connMainnet;
 
-                const costInUsd = 0.01;
+                const costInUsd = 0.001;
                 accountFunction
                     .handleAPIQuota(conn, authTokenDecoded, costInUsd)
                     .then((account) => {
