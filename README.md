@@ -26,11 +26,11 @@ cd assist-service;
 -   Modify .env file with any number of wallets to use
 -   [OPTIONAL]: If you want to remove previous mongodb data and start fresh, remove the mongodb directory
     ```
-    rm -rf ~/.assist-data/assist-mongo-data
+    ./setup.sh cleanup
     ```
 -   Start API server
     ```
-    ./run.sh start
+    ./setup.sh start; npm run dev
     ```
 
 # API Endpoints

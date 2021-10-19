@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-declare -a Images=("hive-node:v2.3.0")
+declare -a Images=("hive-node:v2.3.14")
 declare -a Containers=("hive-node" "assist-mongo")
 
 function stop () {

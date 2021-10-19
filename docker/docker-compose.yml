@@ -1,36 +1,36 @@
-version: "3.3"
+version: '3.3'
 
 services:
-  hive-node:
-    container_name: hive-node
-    image: tuumtech/hive-node:v2.3.0
-    user: "${UID}:${GID}"
-    entrypoint: /bin/sh -c "python manage.py -c dev runserver"
-    volumes:
-      - ${HOME}/.assist-data/hive-data:/src/data
-      - ${PWD}/docker/hive.env:/src/.env
-    ports:
-      - 9001:5000
-    depends_on:
-      - assist-mongo
-    networks:
-      - assist
-    tty: true
+    hive-node:
+        container_name: hive-node
+        image: tuumtech/hive-node:v2.3.14
+        user: '${UID}:${GID}'
+        entrypoint: /bin/sh -c "python manage.py -c dev runserver"
+        volumes:
+            - ${HOME}/.assist-data/hive-data:/src/data
+            - ${PWD}/docker/hive.env:/src/.env
+        ports:
+            - 9001:5000
+        depends_on:
+            - assist-mongo
+        networks:
+            - assist
+        tty: true
 
-  assist-mongo:
-    container_name: assist-mongo
-    image: mongo
-    user: "${UID}:${GID}"
-    volumes:
-      - ${HOME}/.assist-data/assist-mongo-data:/data/db
-    ports:
-      - 37018:27017
-    environment:
-      - MONGO_INITDB_ROOT_USERNAME=mongoadmin
-      - MONGO_INITDB_ROOT_PASSWORD=mongopass
-    networks:
-      - assist
-    tty: true
+    assist-mongo:
+        container_name: assist-mongo
+        image: mongo
+        user: '${UID}:${GID}'
+        volumes:
+            - ${HOME}/.assist-data/assist-mongo-data:/data/db
+        ports:
+            - 37018:27017
+        environment:
+            - MONGO_INITDB_ROOT_USERNAME=mongoadmin
+            - MONGO_INITDB_ROOT_PASSWORD=mongopass
+        networks:
+            - assist
+        tty: true
 
 networks:
-  assist:
+    assist:
