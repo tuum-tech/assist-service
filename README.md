@@ -52,3 +52,13 @@ Return:
     Success: { '_status': 'OK', 'message': 'pong' }
     Failure: { '_status': 'ERR', '_error': { 'code': 404, 'message': 'err_message' } }
 ```
+
+## Deploy to production
+
+```
+cp .ebextensions_prod/envvariables.config .ebextensions/envvariables.config
+git commit -am "eb deploy"
+eb deploy
+git reset HEAD^
+git checkout .ebextensions/envvariables.config
+```
