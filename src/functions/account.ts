@@ -89,7 +89,6 @@ async function handleAPIQuota(conn: mongoose.Connection, authTokenDecoded: any, 
             result.user.requests.exhaustedQuota += quotaToExhaust;
             result.user.requests.today += 1;
             result.user.requests.all += 1;
-            result.user.save();
         })
         .catch((error: any) => {
             logging.error(NAMESPACE, 'Error while trying to validate the user: ', error);

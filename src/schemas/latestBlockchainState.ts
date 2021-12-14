@@ -5,16 +5,27 @@ const LatestBlockchainStateSchema: Schema = new Schema(
         chain: { type: String, required: true },
         network: { type: String },
         height: { type: Number },
-        miner: { type: String },
-        validator: {
+        currentMiner: { type: String },
+        currentValidator: {
             name: { type: String },
             rank: { type: Number },
+            ondutyHeight: { type: Number },
             ownerKey: { type: String },
             nodeKey: { type: String },
             location: { type: String },
-            url: { type: String },
-            ip: { type: String }
+            url: { type: String }
         },
+        nextValidator: {
+            name: { type: String },
+            rank: { type: Number },
+            ondutyHeight: { type: Number },
+            ownerKey: { type: String },
+            nodeKey: { type: String },
+            location: { type: String },
+            url: { type: String }
+        },
+        dposArbiters: { type: Object },
+        dposCandidates: { type: Object },
         elaPriceUsd: { type: Number },
         avgTxHourly: { type: Number },
         accountsOverOneELA: { type: Number },

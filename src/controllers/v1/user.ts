@@ -275,6 +275,7 @@ const getAllUsers = (req: Request, res: Response, next: NextFunction) => {
                     if (account.error) {
                         return res.status(account.retCode).json(commonService.returnError(network, account.retCode, account.error));
                     }
+                    account.user.save();
                     return res.status(200).json(commonService.returnSuccess(network, 200, data, account.quota));
                 })
                 .catch((error) => {
@@ -330,6 +331,7 @@ const getNewUserStats = (req: Request, res: Response, next: NextFunction) => {
 
                         return res.status(account.retCode).json(commonService.returnError(network, account.retCode, account.error));
                     }
+                    account.user.save();
                     return res.status(200).json(commonService.returnSuccess(network, 200, data, account.quota));
                 })
                 .catch((error) => {

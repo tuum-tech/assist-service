@@ -55,23 +55,21 @@ function setLatestBlockInfo(network: string) {
                                 .then((r: any) => {
                                     return r.data.block;
                                 })
-                                .then((block: any) => {
+                                .then(async (block: any) => {
+                                    // TODO: console.log(block);
                                     latestState.height = height;
                                     latestState.block = block;
-                                    latestState.miner = 'TBD';
-                                    latestState.validator = {
-                                        name: 'TBD',
-                                        rank: Infinity,
-                                        ownerKey: 'TBD',
-                                        nodeKey: 'TBD',
-                                        location: 'TBD',
-                                        url: 'TBD',
-                                        ip: 'TBD'
-                                    };
+                                    latestState.currentMiner = block.minerinfo;
+                                    const validators = await rpcService.getDPoSValidators(network, height);
+                                    latestState.dposArbiters = validators.data.dposArbiters;
+                                    latestState.dposCandidates = validators.data.dposCandidates;
+                                    latestState.currentValidator = validators.data.currentValidator;
+                                    latestState.nextValidator = validators.data.nextValidator;
                                     latestState.elaPriceUsd = elaPriceUsd;
                                     latestState.avgTxHourly = Infinity;
                                     latestState.accountsOverOneELA = Infinity;
-                                    latestState.hashrate = 'TBD';
+                                    const miningInfo = await rpcService.getMiningInfo(network);
+                                    latestState.hashrate = miningInfo.data.networkHashPs;
                                     latestState.numTx = block.tx.length;
                                     latestState.extraInfo = {
                                         rpcUrl,
