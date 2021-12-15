@@ -97,36 +97,38 @@ function publishDIDTx(network: string) {
                 .exec()
                 .then((didTxes) => {
                     didTxes.map((didTx, index) => {
-                        const wallet = config.blockchain.eidSidechain.wallets.keystores[Math.floor(Math.random() * config.blockchain.eidSidechain.wallets.keystores.length)];
-                        rpcService
-                            .signTx(network, wallet, JSON.stringify(didTx.didRequest), index)
-                            .then((res) => {
-                                if (res.error) {
-                                    logging.error(NAMESPACE, 'Error while publishing the a pending DID transaction to the blockchain: ', res.error);
+                        if (!didTx.walletUsed) {
+                            const wallet = config.blockchain.eidSidechain.wallets.keystores[Math.floor(Math.random() * config.blockchain.eidSidechain.wallets.keystores.length)];
+                            rpcService
+                                .signTx(network, wallet, JSON.stringify(didTx.didRequest), index)
+                                .then((res) => {
+                                    didTx.walletUsed = res.txDetails.walletUsed;
+                                    if (res.error) {
+                                        logging.error(NAMESPACE, 'Error while publishing the a pending DID transaction to the blockchain: ', res.error);
+
+                                        didTx.status = config.txStatus.cancelled;
+                                        didTx.extraInfo = {
+                                            error: res.error
+                                        };
+                                        didTx.save();
+                                    } else {
+                                        web3.eth.sendSignedTransaction(res.txDetails.rawTx).on('transactionHash', (transactionHash: string) => {
+                                            didTx.status = config.txStatus.processing;
+                                            didTx.blockchainTxHash = transactionHash;
+                                            didTx.save();
+                                        });
+                                    }
+                                })
+                                .catch((error: any) => {
+                                    logging.error(NAMESPACE, 'Error while publishing the a pending DID transaction to the blockchain: ', error);
 
                                     didTx.status = config.txStatus.cancelled;
                                     didTx.extraInfo = {
-                                        error: res.error
+                                        error: error.toString()
                                     };
                                     didTx.save();
-                                } else {
-                                    web3.eth.sendSignedTransaction(res.txDetails.rawTx).on('transactionHash', (transactionHash: string) => {
-                                        didTx.status = config.txStatus.processing;
-                                        didTx.blockchainTxHash = transactionHash;
-                                        didTx.walletUsed = res.txDetails.walletUsed;
-                                        didTx.save();
-                                    });
-                                }
-                            })
-                            .catch((error) => {
-                                logging.error(NAMESPACE, 'Error while publishing the a pending DID transaction to the blockchain: ', error);
-
-                                didTx.status = config.txStatus.cancelled;
-                                didTx.extraInfo = {
-                                    error
-                                };
-                                didTx.save();
-                            });
+                                });
+                        }
                     });
                     return true;
                 })

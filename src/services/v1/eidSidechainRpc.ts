@@ -52,7 +52,9 @@ async function signTx(network: string, wallet: any, payload: string, index: numb
 
         const account = web3.eth.accounts.decrypt(wallet, config.blockchain.eidSidechain.wallets.pass);
         const walletAddress = web3.utils.toChecksumAddress(account.address);
-        res.walletUsed = walletAddress;
+        res.txDetails.walletUsed = walletAddress;
+        logging.info(NAMESPACE, `Using wallet ${walletAddress} to publish the DID`);
+
         const privateKey = account.privateKey;
 
         const data = contract.methods.publishDidTransaction(payload).encodeABI();
@@ -61,6 +63,7 @@ async function signTx(network: string, wallet: any, payload: string, index: numb
         const nonce: any = await web3.eth.getTransactionCount(walletAddress).then((n: any) => {
             return n + index;
         });
+        logging.info(NAMESPACE, `Using nonce ${nonce} for ${walletAddress} to publish the DID`);
         let gas = 1000000;
         try {
             // Estimate gas cost
@@ -71,7 +74,10 @@ async function signTx(network: string, wallet: any, payload: string, index: numb
         } catch (error) {
             logging.info(NAMESPACE, 'Error while trying to estimate gas:', error);
         }
+        logging.info(NAMESPACE, `Using gas ${gas} for ${walletAddress} to publish the DID`);
+
         const gasPrice = await web3.eth.getGasPrice();
+        logging.info(NAMESPACE, `Using gasPrice ${gasPrice} for ${walletAddress} to publish the DID`);
 
         const to = web3.utils.toChecksumAddress(contractAddress);
 
@@ -88,9 +94,9 @@ async function signTx(network: string, wallet: any, payload: string, index: numb
             return result;
         });
         res.txDetails.rawTx = signedTx.rawTransaction;
-    } catch (err) {
-        logging.info(NAMESPACE, 'Error while trying to sign the DID transaction:', err);
-        res.error = err;
+    } catch (err: any) {
+        logging.info(NAMESPACE, 'Error while trying to sign the DID transaction:', err.toString());
+        res.error = err.toString();
     }
 
     return res;
