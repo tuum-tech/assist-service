@@ -96,9 +96,15 @@ function publishDIDTx(network: string) {
             const pendingTxDone = conn.models.DidTx.find({ status: config.txStatus.pending })
                 .exec()
                 .then((didTxes) => {
+                    const newKeystores = [...config.blockchain.eidSidechain.wallets.keystores];
                     didTxes.map((didTx, index) => {
-                        if (!didTx.walletUsed) {
-                            const wallet = config.blockchain.eidSidechain.wallets.keystores[Math.floor(Math.random() * config.blockchain.eidSidechain.wallets.keystores.length)];
+                        if (didTx.walletUsed) {
+                            const i = newKeystores.indexOf(didTx.walletUsed);
+                            if (i !== -1) {
+                                newKeystores.splice(i, 1);
+                            }
+                        } else {
+                            const wallet = newKeystores[Math.floor(Math.random() * newKeystores.length)];
                             rpcService
                                 .signTx(network, wallet, JSON.stringify(didTx.didRequest), index)
                                 .then((res) => {
@@ -112,6 +118,7 @@ function publishDIDTx(network: string) {
                                         };
                                         didTx.save();
                                     } else {
+                                        setTimeout(() => {});
                                         web3.eth.sendSignedTransaction(res.txDetails.rawTx).on('transactionHash', (transactionHash: string) => {
                                             didTx.status = config.txStatus.processing;
                                             didTx.blockchainTxHash = transactionHash;
