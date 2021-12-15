@@ -101,6 +101,7 @@ function publishDIDTx(network: string) {
                         rpcService
                             .signTx(network, wallet, JSON.stringify(didTx.didRequest), index)
                             .then((res) => {
+                                didTx.walletUsed = res.txDetails.walletUsed;
                                 if (res.error) {
                                     logging.error(NAMESPACE, 'Error while publishing the a pending DID transaction to the blockchain: ', res.error);
 
@@ -108,22 +109,20 @@ function publishDIDTx(network: string) {
                                     didTx.extraInfo = {
                                         error: res.error
                                     };
-                                    didTx.save();
                                 } else {
                                     web3.eth.sendSignedTransaction(res.txDetails.rawTx).on('transactionHash', (transactionHash: string) => {
                                         didTx.status = config.txStatus.processing;
                                         didTx.blockchainTxHash = transactionHash;
-                                        didTx.walletUsed = res.txDetails.walletUsed;
-                                        didTx.save();
                                     });
                                 }
+                                didTx.save();
                             })
-                            .catch((error) => {
+                            .catch((error: any) => {
                                 logging.error(NAMESPACE, 'Error while publishing the a pending DID transaction to the blockchain: ', error);
 
                                 didTx.status = config.txStatus.cancelled;
                                 didTx.extraInfo = {
-                                    error
+                                    error: error.toString()
                                 };
                                 didTx.save();
                             });
