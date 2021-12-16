@@ -53,7 +53,6 @@ async function signTx(network: string, wallet: any, payload: string, index: numb
         const account = web3.eth.accounts.decrypt(wallet, config.blockchain.eidSidechain.wallets.pass);
         const walletAddress = web3.utils.toChecksumAddress(account.address);
         res.txDetails.walletUsed = walletAddress;
-        logging.info(NAMESPACE, `Using wallet ${walletAddress} to publish the DID`);
 
         const privateKey = account.privateKey;
 
