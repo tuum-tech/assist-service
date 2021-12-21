@@ -319,11 +319,14 @@ async function publishDIDTxPending(network: string) {
                             };
                             didTx.save();
                         } else {
-                            web3.eth.sendSignedTransaction(res.txDetails.rawTx).on('transactionHash', (transactionHash: string) => {
-                                didTx.status = config.txStatus.processing;
-                                didTx.blockchainTxHash = transactionHash;
-                                didTx.save();
-                            });
+                            setTimeout(() => {
+                                web3.eth.sendSignedTransaction(res.txDetails.rawTx).on('transactionHash', (transactionHash: string) => {
+                                    logging.info(NAMESPACE, `Pending tx ${res.txDetails.rawTx} has now been sent`);
+                                    didTx.status = config.txStatus.processing;
+                                    didTx.blockchainTxHash = transactionHash;
+                                    didTx.save();
+                                });
+                            }, 5000);
                         }
                     })
                     .catch((error: any) => {
@@ -342,14 +345,14 @@ async function publishDIDTxPending(network: string) {
 
             setTimeout(() => {
                 publishDIDTxPending(network);
-            }, 10000);
+            }, 5000);
         })
         .catch((err) => {
             logging.error(NAMESPACE, 'Error while publishing the Pending DID transactions to the blockchain: ', err);
 
             setTimeout(() => {
                 publishDIDTxPending(network);
-            }, 10000);
+            }, 5000);
         });
 }
 
