@@ -63,16 +63,17 @@ async function signTx(network: string, wallet: any, payload: string, index: numb
             return n + index;
         });
         logging.info(NAMESPACE, `Using nonce ${nonce} for ${walletAddress} to publish the DID`);
-        let gas = 1000000;
-        try {
-            // Estimate gas cost
-            gas = await contract.methods.publishDidTransaction(payload).estimateGas({
-                from: walletAddress,
-                gas: 1000000
-            });
-        } catch (error) {
-            logging.info(NAMESPACE, 'Error while trying to estimate gas:', error);
-        }
+        const gas = 3000000;
+        // try {
+        //     // Estimate gas cost
+        //     gas = await contract.methods.publishDidTransaction(payload).estimateGas({
+        //         from: walletAddress,
+        //         gas: 1000000
+        //     });
+        // } catch (error: any) {
+        //     logging.info(NAMESPACE, 'Error while trying to estimate gas:', error);
+        //     res.error = error.toString();
+        // }
         logging.info(NAMESPACE, `Using gas ${gas} for ${walletAddress} to publish the DID`);
 
         const gasPrice = await web3.eth.getGasPrice();

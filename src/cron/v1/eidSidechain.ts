@@ -12,179 +12,395 @@ import Web3 from 'web3';
 
 const NAMESPACE = 'Cron: EID Sidechain';
 
-function publishDIDTx(network: string) {
-    logging.info(NAMESPACE, `Started cronjob: publishDIDTx: ${network}`);
+// function publishDIDTx(network: string) {
+//     // * * * * * * format = second minute hour dayofmonth month dayofweek
+//     cron.schedule(
+//         '*/5 * * * * *',
+//         () => {
+//             logging.info(NAMESPACE, `Started cronjob: publishDIDTx: ${network}`);
+
+//             const rpcUrl = network === config.blockchain.testnet ? config.blockchain.eidSidechain.testnet.rpcUrl : config.blockchain.eidSidechain.mainnet.rpcUrl;
+//             const backupRpcUrl = network === config.blockchain.testnet ? config.blockchain.eidSidechain.testnet.backupRpcUrl : config.blockchain.eidSidechain.mainnet.backupRpcUrl;
+//             const chainId = network === config.blockchain.testnet ? config.blockchain.eidSidechain.testnet.chainId : config.blockchain.eidSidechain.mainnet.chainId;
+//             const genesisBlockHash = network === config.blockchain.testnet ? config.blockchain.eidSidechain.testnet.genesisBlockHash : config.blockchain.eidSidechain.mainnet.genesisBlockHash;
+//             const depositAddress = network === config.blockchain.testnet ? config.blockchain.eidSidechain.testnet.depositAddress : config.blockchain.eidSidechain.mainnet.depositAddress;
+//             const withdrawContractAddress =
+//                 network === config.blockchain.testnet ? config.blockchain.eidSidechain.testnet.withdrawContractAddress : config.blockchain.eidSidechain.mainnet.withdrawContractAddress;
+//             const didContractAddress = network === config.blockchain.testnet ? config.blockchain.eidSidechain.testnet.didContractAddress : config.blockchain.eidSidechain.mainnet.didContractAddress;
+
+//             const web3 = new Web3(rpcUrl);
+
+//             const conn = network === config.blockchain.testnet ? connTestnet : connMainnet;
+
+//             rpcService
+//                 .getBlockHeight(network)
+//                 .then((heightResponse) => {
+//                     const currentHeight: number = heightResponse.data.height - 1;
+//                     return currentHeight;
+//                 })
+//                 .then((height) => {
+//                     const checkHeightDone = conn.models.LatestBlockchainState.findOne({ chain: config.blockchain.eidSidechain.name })
+//                         .exec()
+//                         .then((state) => {
+//                             const latestState =
+//                                 state ||
+//                                 new conn.models.LatestBlockchainState({
+//                                     _id: new mongoose.Types.ObjectId(),
+//                                     chain: config.blockchain.eidSidechain.name,
+//                                     network
+//                                 });
+//                             web3.eth
+//                                 .getBlock(height)
+//                                 .then((block: any) => {
+//                                     return block;
+//                                 })
+//                                 .then((block: any) => {
+//                                     latestState.height = height;
+//                                     latestState.block = block;
+//                                     latestState.miner = 'TBD';
+//                                     latestState.validator = {
+//                                         name: 'TBD',
+//                                         rank: Infinity,
+//                                         ownerKey: 'TBD',
+//                                         nodeKey: 'TBD',
+//                                         location: 'TBD',
+//                                         url: 'TBD',
+//                                         ip: 'TBD'
+//                                     };
+//                                     latestState.avgTxHourly = Infinity;
+//                                     latestState.accountsOverOneELA = Infinity;
+//                                     latestState.numTx = block.transactions.length;
+//                                     latestState.extraInfo = {
+//                                         rpcUrl,
+//                                         backupRpcUrl,
+//                                         chainId,
+//                                         genesisBlockHash,
+//                                         depositAddress,
+//                                         withdrawContractAddress,
+//                                         didContractAddress
+//                                     };
+//                                     latestState.save();
+//                                 })
+//                                 .catch((err: any) => {
+//                                     logging.error(NAMESPACE, 'Error while getting the latest block from the blockchain: ', err);
+//                                     return false;
+//                                 });
+//                             return true;
+//                         })
+//                         .catch((err) => {
+//                             logging.error(NAMESPACE, 'Error while trying to retrieve latest state of the blockchain from the database: ', err);
+//                             return false;
+//                         });
+//                     return checkHeightDone;
+//                 })
+//                 .then((checkHeightDone) => {
+//                     if (!checkHeightDone) {
+//                         return;
+//                     }
+//                     conn.models.DidTx.find({ status: config.txStatus.pending })
+//                         .exec()
+//                         .then((didTxes) => {
+//                             const newKeystores = [...config.blockchain.eidSidechain.wallets.keystores];
+//                             didTxes.map((didTx, index) => {
+//                                 if (didTx.walletUsed) {
+//                                     const i = newKeystores.indexOf(didTx.walletUsed);
+//                                     if (i !== -1) {
+//                                         newKeystores.splice(i, 1);
+//                                     }
+//                                 } else {
+//                                     const wallet = newKeystores[Math.floor(Math.random() * newKeystores.length)];
+//                                     logging.info(NAMESPACE, `Using wallet ${wallet.address} to publish ${didTx.did}`);
+//                                     rpcService
+//                                         .signTx(network, wallet, JSON.stringify(didTx.didRequest), index)
+//                                         .then((res) => {
+//                                             didTx.walletUsed = res.txDetails.walletUsed;
+//                                             didTx.save();
+//                                             if (res.error) {
+//                                                 logging.error(NAMESPACE, 'Error while publishing the a pending DID transaction to the blockchain: ', res.error);
+
+//                                                 didTx.status = config.txStatus.cancelled;
+//                                                 didTx.extraInfo = {
+//                                                     error: res.error
+//                                                 };
+//                                                 didTx.save();
+//                                             } else {
+//                                                 web3.eth.sendSignedTransaction(res.txDetails.rawTx).on('transactionHash', (transactionHash: string) => {
+//                                                     didTx.status = config.txStatus.processing;
+//                                                     didTx.blockchainTxHash = transactionHash;
+//                                                     didTx.save();
+//                                                 });
+//                                             }
+//                                         })
+//                                         .catch((error: any) => {
+//                                             logging.error(NAMESPACE, 'Error while publishing the a pending DID transaction to the blockchain: ', error);
+
+//                                             didTx.status = config.txStatus.cancelled;
+//                                             didTx.extraInfo = {
+//                                                 error: error.toString()
+//                                             };
+//                                             didTx.save();
+//                                         });
+//                                 }
+//                             });
+//                         })
+//                         .catch((err) => {
+//                             logging.error(NAMESPACE, 'Error while publishing the Pending DID transactions to the blockchain: ', err);
+//                         });
+//                 })
+//                 .then(() => {
+//                     conn.models.DidTx.find({ status: config.txStatus.processing })
+//                         .exec()
+//                         .then((didTxes) => {
+//                             didTxes.map((didTx) => {
+//                                 web3.eth.getTransactionReceipt(didTx.blockchainTxHash, (err, txReceipt) => {
+//                                     logging.info(NAMESPACE, `${didTx.did}: ${txReceipt}`);
+//                                     if (!txReceipt) {
+//                                         didTx.extraInfo = {
+//                                             error: err
+//                                         };
+//                                         didTx.save();
+//                                         return;
+//                                     }
+//                                     didTx.blockchainTxReceipt = txReceipt;
+//                                     if (txReceipt.status) {
+//                                         didTx.status = config.txStatus.completed;
+//                                     } else {
+//                                         didTx.status = config.txStatus.cancelled;
+//                                         didTx.extraInfo = {
+//                                             error: err
+//                                         };
+//                                         logging.error(NAMESPACE, 'Error while trying to publish DID transaction so changed its status to cancelled');
+//                                     }
+//                                     didTx.save();
+//                                 });
+//                             });
+//                         })
+//                         .catch((err) => {
+//                             logging.error(NAMESPACE, 'Error while trying to process Processing DID transactions from the database: ', err);
+//                         });
+//                 })
+//                 .then(() => {
+//                     logging.info(NAMESPACE, `Completed cronjob: publishDIDTx: ${network}`);
+//                     // setTimeout(() => {
+//                     //     publishDIDTx(network);
+//                     // }, 5000);
+//                 })
+//                 .catch((err) => {
+//                     logging.error(NAMESPACE, 'Error while trying to run the cronjob to publish DID txes: ', err);
+//                 });
+//         },
+//         { timezone: 'Etc/UTC' }
+//     );
+// }
+
+async function setLatestBlockInfo(network: string) {
+    // * * * * * * format = second minute hour dayofmonth month dayofweek
+    cron.schedule(
+        '*/10 * * * * *',
+        async () => {
+            logging.info(NAMESPACE, `Started cronjob: setLatestBlockInfo: ${network}`);
+
+            const rpcUrl = network === config.blockchain.testnet ? config.blockchain.eidSidechain.testnet.rpcUrl : config.blockchain.eidSidechain.mainnet.rpcUrl;
+            const backupRpcUrl = network === config.blockchain.testnet ? config.blockchain.eidSidechain.testnet.backupRpcUrl : config.blockchain.eidSidechain.mainnet.backupRpcUrl;
+            const chainId = network === config.blockchain.testnet ? config.blockchain.eidSidechain.testnet.chainId : config.blockchain.eidSidechain.mainnet.chainId;
+            const genesisBlockHash = network === config.blockchain.testnet ? config.blockchain.eidSidechain.testnet.genesisBlockHash : config.blockchain.eidSidechain.mainnet.genesisBlockHash;
+            const depositAddress = network === config.blockchain.testnet ? config.blockchain.eidSidechain.testnet.depositAddress : config.blockchain.eidSidechain.mainnet.depositAddress;
+            const withdrawContractAddress =
+                network === config.blockchain.testnet ? config.blockchain.eidSidechain.testnet.withdrawContractAddress : config.blockchain.eidSidechain.mainnet.withdrawContractAddress;
+            const didContractAddress = network === config.blockchain.testnet ? config.blockchain.eidSidechain.testnet.didContractAddress : config.blockchain.eidSidechain.mainnet.didContractAddress;
+
+            const web3 = new Web3(rpcUrl);
+
+            const conn = network === config.blockchain.testnet ? connTestnet : connMainnet;
+
+            rpcService
+                .getBlockHeight(network)
+                .then((heightResponse) => {
+                    const currentHeight: number = heightResponse.data.height - 1;
+                    return currentHeight;
+                })
+                .then((height) => {
+                    const checkHeightDone = conn.models.LatestBlockchainState.findOne({ chain: config.blockchain.eidSidechain.name })
+                        .exec()
+                        .then((state) => {
+                            const latestState =
+                                state ||
+                                new conn.models.LatestBlockchainState({
+                                    _id: new mongoose.Types.ObjectId(),
+                                    chain: config.blockchain.eidSidechain.name,
+                                    network
+                                });
+                            web3.eth
+                                .getBlock(height)
+                                .then((block: any) => {
+                                    return block;
+                                })
+                                .then((block: any) => {
+                                    latestState.height = height;
+                                    latestState.block = block;
+                                    latestState.miner = 'TBD';
+                                    latestState.validator = {
+                                        name: 'TBD',
+                                        rank: Infinity,
+                                        ownerKey: 'TBD',
+                                        nodeKey: 'TBD',
+                                        location: 'TBD',
+                                        url: 'TBD',
+                                        ip: 'TBD'
+                                    };
+                                    latestState.avgTxHourly = Infinity;
+                                    latestState.accountsOverOneELA = Infinity;
+                                    latestState.numTx = block.transactions.length;
+                                    latestState.extraInfo = {
+                                        rpcUrl,
+                                        backupRpcUrl,
+                                        chainId,
+                                        genesisBlockHash,
+                                        depositAddress,
+                                        withdrawContractAddress,
+                                        didContractAddress
+                                    };
+                                    latestState.save();
+                                })
+                                .catch((err: any) => {
+                                    logging.error(NAMESPACE, 'Error while getting the latest block from the blockchain: ', err);
+                                    return false;
+                                });
+                            return true;
+                        })
+                        .catch((err) => {
+                            logging.error(NAMESPACE, 'Error while trying to retrieve latest state of the blockchain from the database: ', err);
+                            return false;
+                        });
+                    return checkHeightDone;
+                })
+                .then(() => {
+                    logging.info(NAMESPACE, `Completed cronjob: setLatestBlockInfo: ${network}`);
+                })
+                .catch((err: any) => {
+                    logging.error(NAMESPACE, 'Error while trying to run the cronjob to get latest block details: ', err.toString());
+                });
+        },
+        { timezone: 'Etc/UTC' }
+    );
+}
+
+async function publishDIDTxPending(network: string) {
+    logging.info(NAMESPACE, `Started cronjob: publishDIDTxPending: ${network}`);
 
     const rpcUrl = network === config.blockchain.testnet ? config.blockchain.eidSidechain.testnet.rpcUrl : config.blockchain.eidSidechain.mainnet.rpcUrl;
-    const backupRpcUrl = network === config.blockchain.testnet ? config.blockchain.eidSidechain.testnet.backupRpcUrl : config.blockchain.eidSidechain.mainnet.backupRpcUrl;
-    const chainId = network === config.blockchain.testnet ? config.blockchain.eidSidechain.testnet.chainId : config.blockchain.eidSidechain.mainnet.chainId;
-    const genesisBlockHash = network === config.blockchain.testnet ? config.blockchain.eidSidechain.testnet.genesisBlockHash : config.blockchain.eidSidechain.mainnet.genesisBlockHash;
-    const depositAddress = network === config.blockchain.testnet ? config.blockchain.eidSidechain.testnet.depositAddress : config.blockchain.eidSidechain.mainnet.depositAddress;
-    const withdrawContractAddress =
-        network === config.blockchain.testnet ? config.blockchain.eidSidechain.testnet.withdrawContractAddress : config.blockchain.eidSidechain.mainnet.withdrawContractAddress;
-    const didContractAddress = network === config.blockchain.testnet ? config.blockchain.eidSidechain.testnet.didContractAddress : config.blockchain.eidSidechain.mainnet.didContractAddress;
 
     const web3 = new Web3(rpcUrl);
 
     const conn = network === config.blockchain.testnet ? connTestnet : connMainnet;
 
-    rpcService
-        .getBlockHeight(network)
-        .then((heightResponse) => {
-            const currentHeight: number = heightResponse.data.height - 1;
-            return currentHeight;
-        })
-        .then((height) => {
-            const checkHeightDone = conn.models.LatestBlockchainState.findOne({ chain: config.blockchain.eidSidechain.name })
-                .exec()
-                .then((state) => {
-                    const latestState =
-                        state ||
-                        new conn.models.LatestBlockchainState({
-                            _id: new mongoose.Types.ObjectId(),
-                            chain: config.blockchain.eidSidechain.name,
-                            network
-                        });
-                    web3.eth
-                        .getBlock(height)
-                        .then((block: any) => {
-                            return block;
-                        })
-                        .then((block: any) => {
-                            latestState.height = height;
-                            latestState.block = block;
-                            latestState.miner = 'TBD';
-                            latestState.validator = {
-                                name: 'TBD',
-                                rank: Infinity,
-                                ownerKey: 'TBD',
-                                nodeKey: 'TBD',
-                                location: 'TBD',
-                                url: 'TBD',
-                                ip: 'TBD'
-                            };
-                            latestState.avgTxHourly = Infinity;
-                            latestState.accountsOverOneELA = Infinity;
-                            latestState.numTx = block.transactions.length;
-                            latestState.extraInfo = {
-                                rpcUrl,
-                                backupRpcUrl,
-                                chainId,
-                                genesisBlockHash,
-                                depositAddress,
-                                withdrawContractAddress,
-                                didContractAddress
-                            };
-                            latestState.save();
-                        })
-                        .catch((err: any) => {
-                            logging.error(NAMESPACE, 'Error while getting the latest block from the blockchain: ', err);
-                            return false;
-                        });
-                    return true;
-                })
-                .catch((err) => {
-                    logging.error(NAMESPACE, 'Error while trying to retrieve latest state of the blockchain from the database: ', err);
-                    return false;
-                });
-            return checkHeightDone;
-        })
-        .then((checkHeightDone) => {
-            if (!checkHeightDone) {
-                return false;
-            }
-            const pendingTxDone = conn.models.DidTx.find({ status: config.txStatus.pending })
-                .exec()
-                .then((didTxes) => {
-                    const newKeystores = [...config.blockchain.eidSidechain.wallets.keystores];
-                    didTxes.map((didTx, index) => {
-                        if (didTx.walletUsed) {
-                            const i = newKeystores.indexOf(didTx.walletUsed);
-                            if (i !== -1) {
-                                newKeystores.splice(i, 1);
-                            }
-                        } else {
-                            const wallet = newKeystores[Math.floor(Math.random() * newKeystores.length)];
-                            logging.info(NAMESPACE, `Using wallet ${wallet} to publish ${didTx.did}`);
-                            rpcService
-                                .signTx(network, wallet, JSON.stringify(didTx.didRequest), index)
-                                .then((res) => {
-                                    didTx.walletUsed = res.txDetails.walletUsed;
-                                    if (res.error) {
-                                        logging.error(NAMESPACE, 'Error while publishing the a pending DID transaction to the blockchain: ', res.error);
+    await conn.models.DidTx.find({ status: config.txStatus.pending })
+        .exec()
+        .then((didTxes) => {
+            const wallet = config.blockchain.eidSidechain.wallets.keystores[Math.floor(Math.random() * config.blockchain.eidSidechain.wallets.keystores.length)];
+            didTxes.map((didTx, index) => {
+                if (didTx.walletUsed) {
+                    logging.info(NAMESPACE, `${didTx.did} is already being published...`);
+                    return;
+                }
 
-                                        didTx.status = config.txStatus.cancelled;
-                                        didTx.extraInfo = {
-                                            error: res.error
-                                        };
-                                        didTx.save();
-                                    } else {
-                                        web3.eth.sendSignedTransaction(res.txDetails.rawTx).on('transactionHash', (transactionHash: string) => {
-                                            didTx.status = config.txStatus.processing;
-                                            didTx.blockchainTxHash = transactionHash;
-                                            didTx.save();
-                                        });
-                                    }
-                                })
-                                .catch((error: any) => {
-                                    logging.error(NAMESPACE, 'Error while publishing the a pending DID transaction to the blockchain: ', error);
+                logging.info(NAMESPACE, `Using wallet ${wallet.address} to publish ${didTx.did}`);
+                rpcService
+                    .signTx(network, wallet, JSON.stringify(didTx.didRequest), index)
+                    .then((res) => {
+                        didTx.walletUsed = res.txDetails.walletUsed;
+                        didTx.save();
+                        if (res.error) {
+                            logging.error(NAMESPACE, 'Error while publishing the a pending DID transaction to the blockchain: ', res.error);
 
-                                    didTx.status = config.txStatus.cancelled;
-                                    didTx.extraInfo = {
-                                        error: error.toString()
-                                    };
-                                    didTx.save();
-                                });
-                        }
-                    });
-                    return true;
-                })
-                .catch((err) => {
-                    logging.error(NAMESPACE, 'Error while publishing the Pending DID transactions to the blockchain: ', err);
-                    return false;
-                });
-            return pendingTxDone;
-        })
-        .then((pendingTxDone) => {
-            if (!pendingTxDone) {
-                return false;
-            }
-            const processingTxDone = conn.models.DidTx.find({ status: config.txStatus.processing })
-                .exec()
-                .then((didTxes) => {
-                    didTxes.map((didTx) => {
-                        web3.eth.getTransactionReceipt(didTx.blockchainTxHash).then((receipt: any) => {
-                            if (!receipt) {
-                                return;
-                            }
-                            didTx.blockchainTxReceipt = receipt;
-                            if (receipt.status) {
-                                didTx.status = config.txStatus.completed;
-                            } else {
-                                didTx.status = config.txStatus.cancelled;
-                                logging.error(NAMESPACE, 'Error while trying to publish DID transaction so changed its status to cancelled');
-                            }
+                            didTx.status = config.txStatus.cancelled;
+                            didTx.extraInfo = {
+                                error: res.error
+                            };
                             didTx.save();
-                        });
+                        } else {
+                            web3.eth.sendSignedTransaction(res.txDetails.rawTx).on('transactionHash', (transactionHash: string) => {
+                                didTx.status = config.txStatus.processing;
+                                didTx.blockchainTxHash = transactionHash;
+                                didTx.save();
+                            });
+                        }
+                    })
+                    .catch((error: any) => {
+                        logging.error(NAMESPACE, 'Error while publishing the a pending DID transaction to the blockchain: ', error);
+
+                        didTx.status = config.txStatus.cancelled;
+                        didTx.extraInfo = {
+                            error: error.toString()
+                        };
+                        didTx.save();
                     });
-                    return true;
-                })
-                .catch((err) => {
-                    logging.error(NAMESPACE, 'Error while trying to process Processing DID transactions from the database: ', err);
-                    return false;
-                });
-            return processingTxDone;
+            });
         })
         .then(() => {
-            logging.info(NAMESPACE, `Completed cronjob: publishDIDTx: ${network}`);
+            logging.info(NAMESPACE, `Completed cronjob: publishDIDTxPending: ${network}`);
+
             setTimeout(() => {
-                publishDIDTx(network);
+                publishDIDTxPending(network);
+            }, 10000);
+        })
+        .catch((err) => {
+            logging.error(NAMESPACE, 'Error while publishing the Pending DID transactions to the blockchain: ', err);
+
+            setTimeout(() => {
+                publishDIDTxPending(network);
+            }, 10000);
+        });
+}
+
+async function publishDIDTxProcessing(network: string) {
+    logging.info(NAMESPACE, `Started cronjob: publishDIDTxProcessing: ${network}`);
+
+    const rpcUrl = network === config.blockchain.testnet ? config.blockchain.eidSidechain.testnet.rpcUrl : config.blockchain.eidSidechain.mainnet.rpcUrl;
+
+    const web3 = new Web3(rpcUrl);
+
+    const conn = network === config.blockchain.testnet ? connTestnet : connMainnet;
+
+    await conn.models.DidTx.find({ status: config.txStatus.processing })
+        .exec()
+        .then((didTxes) => {
+            didTxes.map((didTx) => {
+                web3.eth.getTransactionReceipt(didTx.blockchainTxHash, (err, txReceipt) => {
+                    logging.info(NAMESPACE, `${didTx.did}: ${txReceipt}`);
+                    if (!txReceipt) {
+                        didTx.extraInfo = {
+                            error: err
+                        };
+                        didTx.save();
+                        return;
+                    }
+                    didTx.blockchainTxReceipt = txReceipt;
+                    if (txReceipt.status) {
+                        didTx.status = config.txStatus.completed;
+                    } else {
+                        didTx.status = config.txStatus.cancelled;
+                        didTx.extraInfo = {
+                            error: err
+                        };
+                        logging.error(NAMESPACE, 'Error while trying to publish DID transaction so changed its status to cancelled');
+                    }
+                    didTx.save();
+                });
+            });
+        })
+        .then(() => {
+            logging.info(NAMESPACE, `Finished cronjob: publishDIDTxProcessing: ${network}`);
+
+            setTimeout(() => {
+                publishDIDTxProcessing(network);
             }, 5000);
         })
         .catch((err) => {
-            logging.error(NAMESPACE, 'Error while trying to run the cronjob to publish DID txes: ', err);
+            logging.error(NAMESPACE, 'Error while trying to process Processing DID transactions from the database: ', err);
+
             setTimeout(() => {
-                publishDIDTx(network);
+                publishDIDTxProcessing(network);
             }, 5000);
         });
 }
@@ -391,4 +607,4 @@ async function dailyCronjob(network: string) {
     );
 }
 
-export default { publishDIDTx, dailyCronjob };
+export default { setLatestBlockInfo, publishDIDTxPending, publishDIDTxProcessing, dailyCronjob };

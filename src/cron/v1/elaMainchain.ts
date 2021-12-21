@@ -8,7 +8,7 @@ import connTestnet from '../../connections/testnet';
 
 const NAMESPACE = 'Cron: ELA Mainchain';
 
-function setLatestBlockInfo(network: string) {
+async function setLatestBlockInfo(network: string) {
     logging.info(NAMESPACE, `Started cronjob: setLatestBlockInfo: ${network}`);
 
     const rpcUrl = network === config.blockchain.testnet ? config.blockchain.elaMainchain.testnet.rpcUrl : config.blockchain.elaMainchain.mainnet.rpcUrl;
@@ -16,7 +16,7 @@ function setLatestBlockInfo(network: string) {
 
     const conn = network === config.blockchain.testnet ? connTestnet : connMainnet;
 
-    rpcService
+    await rpcService
         .getBlockHeight(network)
         .then((heightResponse) => {
             const currentHeight: number = heightResponse.data.height - 1;

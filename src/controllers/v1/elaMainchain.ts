@@ -9,7 +9,7 @@ import IUser from '../../interfaces/user';
 
 const NAMESPACE = 'Controller: ELA Mainchain';
 
-const getBlockInfoLatest = (req: Request, res: Response, next: NextFunction) => {
+const getBlockInfoLatest = async (req: Request, res: Response, next: NextFunction) => {
     const authTokenDecoded = res.locals.jwt;
 
     let network = req.query.network ? req.query.network.toString() : config.blockchain.mainnet;
@@ -17,7 +17,7 @@ const getBlockInfoLatest = (req: Request, res: Response, next: NextFunction) => 
 
     const conn = network === config.blockchain.testnet ? connTestnet : connMainnet;
 
-    const result: any = conn.models.LatestBlockchainState.findOne({ chain: config.blockchain.elaMainchain.name })
+    const result: any = await conn.models.LatestBlockchainState.findOne({ chain: config.blockchain.elaMainchain.name })
         .exec()
         .then((data) => {
             const costInUsd = 0.001;

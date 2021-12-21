@@ -77,8 +77,14 @@ router.listen(config.server.port, () => {
 
     cronEIDSidechain.dailyCronjob(config.blockchain.mainnet);
     cronEIDSidechain.dailyCronjob(config.blockchain.testnet);
-    cronEIDSidechain.publishDIDTx(config.blockchain.mainnet);
-    cronEIDSidechain.publishDIDTx(config.blockchain.testnet);
+
+    cronEIDSidechain.setLatestBlockInfo(config.blockchain.mainnet);
+    cronEIDSidechain.publishDIDTxPending(config.blockchain.mainnet);
+    cronEIDSidechain.publishDIDTxProcessing(config.blockchain.mainnet);
+
+    cronEIDSidechain.setLatestBlockInfo(config.blockchain.testnet);
+    cronEIDSidechain.publishDIDTxPending(config.blockchain.testnet);
+    cronEIDSidechain.publishDIDTxProcessing(config.blockchain.testnet);
 
     cronESCSidechain.setLatestBlockInfo(config.blockchain.mainnet);
     cronESCSidechain.setLatestBlockInfo(config.blockchain.testnet);

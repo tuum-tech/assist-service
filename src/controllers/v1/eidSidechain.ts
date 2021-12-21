@@ -14,7 +14,7 @@ import IUser from '../../interfaces/user';
 
 const NAMESPACE = 'Controller: EID Sidechain';
 
-const publishDIDTx = (req: Request, res: Response, next: NextFunction) => {
+const publishDIDTx = async (req: Request, res: Response, next: NextFunction) => {
     const authTokenDecoded = res.locals.jwt;
 
     const { didRequest, memo, upgradeAccount } = req.body;
@@ -38,7 +38,7 @@ const publishDIDTx = (req: Request, res: Response, next: NextFunction) => {
 
     // Verify whether the given payload is valid by trying to create a transaction out of it and then proceed
     // to the next step if valid
-    const result: any = rpcService
+    const result: any = await rpcService
         .signTx(network, wallet, JSON.stringify(didRequest))
         .then((r: any) => {
             if (r.error) {
@@ -129,7 +129,7 @@ const publishDIDTx = (req: Request, res: Response, next: NextFunction) => {
     return result;
 };
 
-const getAllDIDTxes = (req: Request, res: Response, next: NextFunction) => {
+const getAllDIDTxes = async (req: Request, res: Response, next: NextFunction) => {
     const authTokenDecoded = res.locals.jwt;
 
     let network = req.query.network ? req.query.network.toString() : config.blockchain.mainnet;
@@ -137,7 +137,7 @@ const getAllDIDTxes = (req: Request, res: Response, next: NextFunction) => {
 
     const conn = network === config.blockchain.testnet ? connTestnet : connMainnet;
 
-    const result: any = conn.models.DidTx.find()
+    const result: any = await conn.models.DidTx.find()
         .exec()
         .then((results) => {
             if (results.length === 0) {
@@ -175,7 +175,7 @@ const getAllDIDTxes = (req: Request, res: Response, next: NextFunction) => {
     return result;
 };
 
-const getDIDTxFromConfirmationId = (req: Request, res: Response, next: NextFunction) => {
+const getDIDTxFromConfirmationId = async (req: Request, res: Response, next: NextFunction) => {
     const authTokenDecoded = res.locals.jwt;
 
     const _id = req.params.confirmationId;
@@ -184,7 +184,7 @@ const getDIDTxFromConfirmationId = (req: Request, res: Response, next: NextFunct
 
     const conn = network === config.blockchain.testnet ? connTestnet : connMainnet;
 
-    const result: any = conn.models.DidTx.findOne({ _id })
+    const result: any = await conn.models.DidTx.findOne({ _id })
         .exec()
         .then((didTx) => {
             if (!didTx) {
@@ -221,7 +221,7 @@ const getDIDTxFromConfirmationId = (req: Request, res: Response, next: NextFunct
     return result;
 };
 
-const getDIDTxStats = (req: Request, res: Response, next: NextFunction) => {
+const getDIDTxStats = async (req: Request, res: Response, next: NextFunction) => {
     const authTokenDecoded = res.locals.jwt;
 
     let network = req.query.network ? req.query.network.toString() : config.blockchain.mainnet;
@@ -242,7 +242,7 @@ const getDIDTxStats = (req: Request, res: Response, next: NextFunction) => {
     }
     endDate.setDate(endDate.getDate() + 1);
 
-    const result: any = eidSidechainStats.getTxStats(network, beginDate, endDate).then((stats) => {
+    const result: any = await eidSidechainStats.getTxStats(network, beginDate, endDate).then((stats) => {
         if (stats.error !== null) {
             logging.error(NAMESPACE, 'Error while trying to get DID tx stats: ', stats.error);
             return res.status(500).json(commonService.returnError(network, 500, stats.error));

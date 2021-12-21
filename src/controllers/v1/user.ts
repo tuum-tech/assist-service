@@ -16,7 +16,7 @@ import jwtDecode, { JwtPayload } from 'jwt-decode';
 
 const NAMESPACE = 'Controller: User';
 
-const validateToken = (req: Request, res: Response, next: NextFunction) => {
+const validateToken = async (req: Request, res: Response, next: NextFunction) => {
     logging.info(NAMESPACE, 'Token validated, user authorized.');
 
     const token: string = req.headers.authorization?.split(' ')[1] || '';
@@ -48,7 +48,7 @@ const validateToken = (req: Request, res: Response, next: NextFunction) => {
     return res.status(200).json(commonService.returnSuccess(getNetwork(), 200, data));
 };
 
-const register = (req: Request, res: Response, next: NextFunction) => {
+const register = async (req: Request, res: Response, next: NextFunction) => {
     const { username, password } = req.body;
     let { network } = req.body;
 
@@ -108,7 +108,7 @@ const register = (req: Request, res: Response, next: NextFunction) => {
     });
 };
 
-const login = (req: Request, res: Response, next: NextFunction) => {
+const login = async (req: Request, res: Response, next: NextFunction) => {
     const { username, password } = req.body;
     let { network } = req.body;
 
@@ -116,7 +116,7 @@ const login = (req: Request, res: Response, next: NextFunction) => {
     if (!config.blockchain.validNetworks.includes(network)) network = config.blockchain.mainnet;
 
     const conn = network === config.blockchain.testnet ? connTestnet : connMainnet;
-    conn.models.User.findOne({ username })
+    await conn.models.User.findOne({ username })
         .exec()
         .then((user) => {
             bcryptjs.compare(password, user.password, (error, result) => {
@@ -153,13 +153,13 @@ const login = (req: Request, res: Response, next: NextFunction) => {
         });
 };
 
-const paymentCreateTx = (req: Request, res: Response, next: NextFunction) => {
+const paymentCreateTx = async (req: Request, res: Response, next: NextFunction) => {
     const authTokenDecoded = res.locals.jwt;
     const username = authTokenDecoded.username;
 
     const conn = connMainnet;
 
-    const result: any = conn.models.User.findOne({ username })
+    const result: any = await conn.models.User.findOne({ username })
         .select('-password')
         .exec()
         .then((user: IUser) => {
@@ -189,7 +189,7 @@ const paymentCreateTx = (req: Request, res: Response, next: NextFunction) => {
     return result;
 };
 
-const paymentSignTx = (req: Request, res: Response, next: NextFunction) => {
+const paymentSignTx = async (req: Request, res: Response, next: NextFunction) => {
     const authTokenDecoded = res.locals.jwt;
     const username = authTokenDecoded.username;
 
@@ -197,7 +197,7 @@ const paymentSignTx = (req: Request, res: Response, next: NextFunction) => {
 
     const conn = connMainnet;
 
-    const result: any = conn.models.User.findOne({ username })
+    const result: any = await conn.models.User.findOne({ username })
         .select('-password')
         .exec()
         .then((user: IUser) => {
@@ -250,7 +250,7 @@ const paymentSignTx = (req: Request, res: Response, next: NextFunction) => {
     return result;
 };
 
-const getAllUsers = (req: Request, res: Response, next: NextFunction) => {
+const getAllUsers = async (req: Request, res: Response, next: NextFunction) => {
     const authTokenDecoded = res.locals.jwt;
 
     let network = req.query.network ? req.query.network.toString() : config.blockchain.mainnet;
@@ -258,7 +258,7 @@ const getAllUsers = (req: Request, res: Response, next: NextFunction) => {
 
     const conn = network === config.blockchain.testnet ? connTestnet : connMainnet;
 
-    const result: any = conn.models.User.find()
+    const result: any = await conn.models.User.find()
         .select('-password')
         .select('-balance')
         .select('-orderId')
@@ -292,7 +292,7 @@ const getAllUsers = (req: Request, res: Response, next: NextFunction) => {
     return result;
 };
 
-const getNewUserStats = (req: Request, res: Response, next: NextFunction) => {
+const getNewUserStats = async (req: Request, res: Response, next: NextFunction) => {
     const authTokenDecoded = res.locals.jwt;
 
     let network = req.query.network ? req.query.network.toString() : config.blockchain.mainnet;
@@ -313,7 +313,7 @@ const getNewUserStats = (req: Request, res: Response, next: NextFunction) => {
     }
     endDate.setDate(endDate.getDate() + 1);
 
-    const result: any = userStats.getStats(network, beginDate, endDate).then((stats) => {
+    const result: any = await userStats.getStats(network, beginDate, endDate).then((stats) => {
         if (stats.error !== null) {
             logging.error(NAMESPACE, 'Error while trying to get user stats: ', stats.error);
             return res.status(500).json(commonService.returnError(network, 500, stats.error));

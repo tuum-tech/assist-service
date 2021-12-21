@@ -4,7 +4,7 @@ import logging from '../config/logging';
 
 const NAMESPACE = 'Cron: EID Sidechain';
 
-function sendEmail(subject: string, to: string, html: string, attachments?: any) {
+async function sendEmail(subject: string, to: string, html: string, attachments?: any) {
     logging.info(NAMESPACE, 'Started sending email');
 
     const transporter = nodemailer.createTransport({
@@ -22,7 +22,7 @@ function sendEmail(subject: string, to: string, html: string, attachments?: any)
     });
 
     // send mail with defined transport object
-    transporter
+    await transporter
         .sendMail({
             from: config.smtpCreds.sender, // sender address
             to, // list of receivers

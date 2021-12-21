@@ -8,7 +8,7 @@ import Web3 from 'web3';
 
 const NAMESPACE = 'Cron: ESC Sidechain';
 
-function setLatestBlockInfo(network: string) {
+async function setLatestBlockInfo(network: string) {
     logging.info(NAMESPACE, `Started cronjob: setLatestBlockInfo: ${network}`);
 
     const rpcUrl = network === config.blockchain.testnet ? config.blockchain.escSidechain.testnet.rpcUrl : config.blockchain.escSidechain.mainnet.rpcUrl;
@@ -23,7 +23,7 @@ function setLatestBlockInfo(network: string) {
 
     const conn = network === config.blockchain.testnet ? connTestnet : connMainnet;
 
-    rpcService
+    await rpcService
         .getBlockHeight(network)
         .then((heightResponse) => {
             const currentHeight: number = heightResponse.data.height - 1;
