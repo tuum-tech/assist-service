@@ -125,14 +125,41 @@ const ELA_MAINCHAIN = {
         backupRpcUrl: 'https://api-testnet.trinity-tech.cn/ela'
     }
 };
+const EVM_CHAIN = {
+    name: 'evmChain',
+    chainEth: {
+        rpcUrl: 'https://mainnet.infura.io/v3/9aa3d95b3bc440fa88ea12eaa4456161',
+        backupRpcUrl: 'https://rpc.flashbots.net'
+    },
+    chainOptimism: {
+        rpcUrl: 'https://mainnet.optimism.io'
+    },
+    chainBsc: {
+        rpcUrl: 'https://bsc-dataseed.binance.org'
+    },
+    chainHeco: {
+        rpcUrl: 'https://http-mainnet.hecochain.com'
+    },
+    chainSongbird: {
+        rpcUrl: 'https://songbird.towolabs.com/rpc'
+    }
+};
 const BLOCKCHAIN = {
     mainnet: 'mainnet',
     testnet: 'testnet',
-    tuumnet: 'tuumnet',
+    chainEid: 'eid',
+    chainEsc: 'esc',
+    chainEth: 'ethereum',
+    chainOptimism: 'optimism',
+    chainBsc: 'bsc',
+    chainHeco: 'heco',
+    chainSongbird: 'songbird',
     validNetworks: ['mainnet', 'testnet'],
+    validChains: ['ethereum', 'optimism', 'bsc', 'heco', 'songbird'],
     eidSidechain: EID_SIDECHAIN,
     escSidechain: ESC_SIDECHAIN,
-    elaMainchain: ELA_MAINCHAIN
+    elaMainchain: ELA_MAINCHAIN,
+    evmChain: EVM_CHAIN
 };
 
 const TX_STATUS = {

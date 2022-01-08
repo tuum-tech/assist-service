@@ -1,7 +1,6 @@
 import config from '../../config/config';
 import logging from '../../config/logging';
 import commonService from './common';
-import evmSidechainFunc from '../../functions/evmSidechain';
 import Web3 from 'web3';
 import { AbiItem } from 'web3-utils';
 
@@ -102,18 +101,6 @@ async function signTx(network: string, wallet: any, payload: string, index: numb
     return res;
 }
 
-async function getBlockHeight(network: string) {
-    const rpcUrl = network === config.blockchain.mainnet ? config.blockchain.eidSidechain.mainnet.rpcUrl : config.blockchain.eidSidechain.testnet.rpcUrl;
-    const res: any = await evmSidechainFunc.getBlockHeight(network, rpcUrl);
-    return res;
-}
-
-async function getBalance(network: string, address: string) {
-    const rpcUrl = network === config.blockchain.mainnet ? config.blockchain.eidSidechain.mainnet.rpcUrl : config.blockchain.eidSidechain.testnet.rpcUrl;
-    const res: any = await evmSidechainFunc.getBalance(network, rpcUrl, address);
-    return res;
-}
-
 async function resolveDid(network: string, did: string) {
     const body: any = {
         method: 'did_resolveDID',
@@ -132,4 +119,4 @@ async function resolveDid(network: string, did: string) {
     return commonService.returnSuccess(network, 200, res.data);
 }
 
-export default { signTx, getBlockHeight, getBalance, resolveDid };
+export default { signTx, resolveDid };

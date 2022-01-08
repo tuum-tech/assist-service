@@ -2,7 +2,8 @@ import mongoose from 'mongoose';
 import cron from 'node-cron';
 import config from '../../config/config';
 import logging from '../../config/logging';
-import rpcService from '../../services/v1/eidSidechainRpc';
+import rpcServiceEid from '../../services/v1/eidSidechainRpc';
+import rpcServiceEvm from '../../services/v1/evmRpc';
 import connMainnet from '../../connections/mainnet';
 import connTestnet from '../../connections/testnet';
 import sendNotification from '../../functions/sendNotification';
@@ -212,15 +213,16 @@ async function setLatestBlockInfo(network: string) {
             const web3 = new Web3(rpcUrl);
 
             const conn = network === config.blockchain.testnet ? connTestnet : connMainnet;
+            const isTestnet = network === config.blockchain.testnet ? true : false;
 
-            rpcService
-                .getBlockHeight(network)
+            await rpcServiceEvm
+                .getBlockHeight(config.blockchain.chainEid, isTestnet)
                 .then((heightResponse) => {
                     const currentHeight: number = heightResponse.data.height - 1;
                     return currentHeight;
                 })
                 .then((height) => {
-                    const checkHeightDone = conn.models.LatestBlockchainState.findOne({ chain: config.blockchain.eidSidechain.name })
+                    conn.models.LatestBlockchainState.findOne({ chain: config.blockchain.eidSidechain.name })
                         .exec()
                         .then((state) => {
                             const latestState =
@@ -266,13 +268,10 @@ async function setLatestBlockInfo(network: string) {
                                     logging.error(NAMESPACE, 'Error while getting the latest block from the blockchain: ', err);
                                     return false;
                                 });
-                            return true;
                         })
                         .catch((err) => {
                             logging.error(NAMESPACE, 'Error while trying to retrieve latest state of the blockchain from the database: ', err);
-                            return false;
                         });
-                    return checkHeightDone;
                 })
                 .then(() => {
                     logging.info(NAMESPACE, `Completed cronjob: setLatestBlockInfo: ${network}`);
@@ -305,7 +304,7 @@ async function publishDIDTxPending(network: string) {
                 }
 
                 logging.info(NAMESPACE, `Using wallet ${wallet.address} to publish ${didTx.did}`);
-                rpcService
+                rpcServiceEid
                     .signTx(network, wallet, JSON.stringify(didTx.didRequest), index)
                     .then((res) => {
                         didTx.walletUsed = res.txDetails.walletUsed;
@@ -430,7 +429,9 @@ async function dailyCronjob(network: string) {
 
                 for (const keystore of config.blockchain.eidSidechain.wallets.keystores) {
                     const address = `0x${keystore.address}`;
-                    const balance = await rpcService.getBalance(network, address).then((balanceResponse) => {
+                    const isTestnet = network === config.blockchain.testnet ? true : false;
+
+                    const balance = await rpcServiceEvm.getBalance(config.blockchain.chainEid, address, isTestnet).then((balanceResponse) => {
                         if (balanceResponse.meta.message === 'OK') {
                             return balanceResponse.data.value;
                         } else {

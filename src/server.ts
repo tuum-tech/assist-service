@@ -10,10 +10,14 @@ import authRoutes from './routes/v1/user';
 import eidSidechainRoutes from './routes/v1/eidSidechain';
 import escSidechainRoutes from './routes/v1/escSidechain';
 import elaMainchainRoutes from './routes/v1/elaMainchain';
+import evmChainRoutes from './routes/v1/evmChain';
 import commonService from './services/v1/common';
+import timeout from 'connect-timeout';
 
 const NAMESPACE = 'Server';
 const router = express();
+
+router.use(timeout('30s'));
 
 /** Log the request */
 router.use((req, res, next) => {
@@ -52,6 +56,9 @@ router.use('/v1/elaMainchain', elaMainchainRoutes);
 router.use('/v1/eidSidechain', eidSidechainRoutes);
 /** ESC Sidechain Routes */
 router.use('/v1/escSidechain', escSidechainRoutes);
+
+/**  EVM Chain Routes */
+router.use('/v1/evmChain', evmChainRoutes);
 
 /** Error handling */
 router.use((req, res, next) => {

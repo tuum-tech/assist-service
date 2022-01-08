@@ -9,7 +9,8 @@ import eidSidechainStats from '../../functions/stats/eidSidechain';
 import commonFunction from '../../functions/common';
 import accountFunction from '../../functions/account';
 import commonService from '../../services/v1/common';
-import rpcService from '../../services/v1/eidSidechainRpc';
+import rpcServiceEid from '../../services/v1/eidSidechainRpc';
+import rpcServiceEvm from '../../services/v1/evmRpc';
 import IUser from '../../interfaces/user';
 
 const NAMESPACE = 'Controller: EID Sidechain';
@@ -38,7 +39,7 @@ const publishDIDTx = async (req: Request, res: Response, next: NextFunction) => 
 
     // Verify whether the given payload is valid by trying to create a transaction out of it and then proceed
     // to the next step if valid
-    const result: any = await rpcService
+    const result: any = await rpcServiceEid
         .signTx(network, wallet, JSON.stringify(didRequest))
         .then((r: any) => {
             if (r.error) {
@@ -307,10 +308,57 @@ const getBlockInfoLatest = (req: Request, res: Response, next: NextFunction) => 
     return result;
 };
 
+const getTokenBalance = async (req: Request, res: Response, next: NextFunction) => {
+    const authTokenDecoded = res.locals.jwt;
+
+    const { tokenAddress, walletAddress } = req.body;
+    let { network } = req.body;
+    network = network ? network : config.blockchain.mainnet;
+    if (!config.blockchain.validNetworks.includes(network)) network = config.blockchain.mainnet;
+
+    const conn = network === config.blockchain.testnet ? connTestnet : connMainnet;
+    const isTestnet = network === config.blockchain.testnet ? true : false;
+
+    const result: any = await rpcServiceEvm
+        .getTokenBalance(config.blockchain.chainEid, tokenAddress, walletAddress, isTestnet)
+        .then((balanceResponse) => {
+            if (balanceResponse.meta.message === 'OK') {
+                const data = {
+                    value: balanceResponse.data.value
+                };
+                const costInUsd = 0.001;
+                accountFunction
+                    .handleAPIQuota(conn, authTokenDecoded, costInUsd)
+                    .then((account) => {
+                        if (account.error) {
+                            return res.status(account.retCode).json(commonService.returnError(network, account.retCode, account.error));
+                        }
+                        account.user.save();
+                        return res.status(200).json(commonService.returnSuccess(network, 200, data, account.quota));
+                    })
+                    .catch((error) => {
+                        logging.error(NAMESPACE, 'Error while trying to verify account API quota', error);
+
+                        return res.status(500).json(commonService.returnError(network, 500, error));
+                    });
+            } else {
+                logging.error(NAMESPACE, `Error while getting balance of '${walletAddress}' for the token '${tokenAddress}': `, balanceResponse.error);
+                return res.status(balanceResponse.meta.code).json(commonService.returnError(network, balanceResponse.meta.code, balanceResponse.error));
+            }
+        })
+        .catch((error: any) => {
+            logging.error(NAMESPACE, 'Error while trying to get balance of an address: ', error);
+
+            return res.status(500).json(commonService.returnError(network, 500, error));
+        });
+    return result;
+};
+
 export default {
     publishDIDTx,
     getAllDIDTxes,
     getDIDTxFromConfirmationId,
     getDIDTxStats,
-    getBlockInfoLatest
+    getBlockInfoLatest,
+    getTokenBalance
 };

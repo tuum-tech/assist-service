@@ -106,6 +106,7 @@ dist
 
 # Custom
 .idea/
+.vscode/
 build/**/*
 certs/**/*
 .ebextensions_prod/
