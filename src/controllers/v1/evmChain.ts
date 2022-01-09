@@ -53,17 +53,22 @@ const getTokenBalance = async (req: Request, res: Response, next: NextFunction) 
     return result;
 };
 
-const getTotalSupplyMtrl = async (req: Request, res: Response, next: NextFunction) => {
+const getSupplyMtrl = async (req: Request, res: Response, next: NextFunction) => {
     // const authTokenDecoded = res.locals.jwt;
 
     const tokenAddress = '0x13c99770694f07279607a6274f28a28c33086424';
+
+    const validQs = ['circulating', 'total', 'max'];
+    let q = req.query.q ? req.query.q.toString() : 'circulating';
+    if (!validQs.includes(q)) q = 'circulating';
+
     let network = req.query.network ? req.query.network.toString() : config.blockchain.chainEth;
     if (!config.blockchain.validChains.includes(network)) network = config.blockchain.chainEth;
 
     const conn = connMainnet;
 
     const result: any = await rpcService
-        .getTotalSupplyMtrl(network, tokenAddress)
+        .getSupplyMtrl(network, tokenAddress, q)
         .then((totalSupplyResponse) => {
             return res.status(200).json(totalSupplyResponse.data.value);
         })
@@ -75,30 +80,7 @@ const getTotalSupplyMtrl = async (req: Request, res: Response, next: NextFunctio
     return result;
 };
 
-const getCirculatingSupplyMtrl = async (req: Request, res: Response, next: NextFunction) => {
-    // const authTokenDecoded = res.locals.jwt;
-
-    const tokenAddress = '0x13c99770694f07279607a6274f28a28c33086424';
-    let network = req.query.network ? req.query.network.toString() : config.blockchain.chainEth;
-    if (!config.blockchain.validChains.includes(network)) network = config.blockchain.chainEth;
-
-    const conn = connMainnet;
-
-    const result: any = await rpcService
-        .getCirculatingSupplyMtrl(network, tokenAddress)
-        .then((circSupplyResponse) => {
-            return res.status(200).json(circSupplyResponse.data.value);
-        })
-        .catch((error: any) => {
-            logging.error(NAMESPACE, `Error while trying to get circulating supply of the token '${tokenAddress}': `, error);
-
-            return res.status(500).json(commonService.returnError(network, 500, error));
-        });
-    return result;
-};
-
 export default {
     getTokenBalance,
-    getTotalSupplyMtrl,
-    getCirculatingSupplyMtrl
+    getSupplyMtrl
 };

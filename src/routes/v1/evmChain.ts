@@ -5,7 +5,6 @@ import extractJWT from '../../middleware/extractJWT';
 const router = express.Router();
 
 router.post('/tokenBalance', extractJWT, controller.getTokenBalance);
-router.get('/get/total_supply/mtrl', controller.getTotalSupplyMtrl);
-router.get('/get/circ_supply/mtrl', controller.getCirculatingSupplyMtrl);
+router.get('/get/supply/mtrl', controller.getSupplyMtrl);
 
 export = router;
