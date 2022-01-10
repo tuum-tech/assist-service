@@ -58,7 +58,7 @@ async function signTx(network: string, wallet: any, payload: string, index: numb
         const data = contract.methods.publishDidTransaction(payload).encodeABI();
         // We're adding index to the nonce so we can keep on sending transactions to the blockchain one after another
         // just by increasing the nonce
-        const nonce: any = await web3.eth.getTransactionCount(walletAddress).then((n: any) => {
+        const nonce: any = await web3.eth.getTransactionCount(walletAddress, 'pending').then((n: any) => {
             return n + index;
         });
         logging.info(NAMESPACE, `Using nonce ${nonce} for ${walletAddress} to publish the DID`);
