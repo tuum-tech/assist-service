@@ -6,5 +6,6 @@ const router = express.Router();
 
 router.get('/get/blockInfo/latest', extractJWT, controller.getBlockInfoLatest);
 // router.get('/get/blockInfo/blockNumber/:blockNumber', extractJWT, controller.getBlockInfoByBlockNumber);
+router.get('/get/supply/ela', controller.getSupplyEla);
 
 export = router;

@@ -62,8 +62,7 @@ const getSupplyMtrl = async (req: Request, res: Response, next: NextFunction) =>
     let q = req.query.q ? req.query.q.toString() : 'circulating';
     if (!validQs.includes(q)) q = 'circulating';
 
-    let network = req.query.network ? req.query.network.toString() : config.blockchain.chainEth;
-    if (!config.blockchain.validChains.includes(network)) network = config.blockchain.chainEth;
+    const network = config.blockchain.chainEth;
 
     const conn = connMainnet;
 
@@ -73,7 +72,7 @@ const getSupplyMtrl = async (req: Request, res: Response, next: NextFunction) =>
             return res.status(200).json(totalSupplyResponse.data.value);
         })
         .catch((error: any) => {
-            logging.error(NAMESPACE, `Error while trying to get total supply of the token '${tokenAddress}': `, error);
+            logging.error(NAMESPACE, `Error while trying to get supply of the token '${tokenAddress}': `, error);
 
             return res.status(500).json(commonService.returnError(network, 500, error));
         });

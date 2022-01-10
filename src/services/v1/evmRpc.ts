@@ -128,13 +128,6 @@ async function getTokenBalance(network: string, tokenAddress: string, walletAddr
     return res;
 }
 
-async function getTotalSupplyMtrl(network: string, tokenAddress: string) {
-    const data = {
-        value: 100000000
-    };
-    return commonService.returnSuccess(network, 200, data);
-}
-
 async function getSupplyMtrl(network: string, tokenAddress: string, q: string) {
     const data = {
         value: 100000000
