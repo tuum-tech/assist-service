@@ -9,9 +9,11 @@ const NAMESPACE = 'Connections: Mainnet';
 
 logging.info(NAMESPACE, `Connecting to mongodb mainnet at ${config.mongo.mainnet.url}`);
 
-const connMainnet = mongoose.createConnection(config.mongo.mainnet.url, config.mongo.options);
-connMainnet.model('User', UserSchema);
-connMainnet.model('DidTx', DidTxSchema);
-connMainnet.model('LatestBlockchainState', LatestBlockchainStateSchema);
+const conn = mongoose.createConnection(config.mongo.mainnet.url, config.mongo.options);
+const connMainnet = {
+    User: conn.model('User', UserSchema),
+    DidTx: conn.model('DidTx', DidTxSchema),
+    LatestBlockchainState: conn.model('LatestBlockchainState', LatestBlockchainStateSchema)
+};
 
 export default connMainnet;

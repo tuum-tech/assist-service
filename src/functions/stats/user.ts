@@ -27,13 +27,13 @@ async function getStats(network: string, beginDate: any, endDate: Date, reset: b
         createdAtFilter = { ...createdAtFilter, ...greaterThanEqualToFilter };
     }
 
-    await conn.models.User.find({ createdAt: createdAtFilter })
+    await conn.User.find({ createdAt: createdAtFilter })
         .select('-password')
         .select('-balance')
         .select('-orderId')
         .exec()
-        .then((users) => {
-            users.map((user) => {
+        .then((users: any) => {
+            users.map((user: any) => {
                 const countToday = user.requests.today;
                 const countAll = user.requests.all;
                 const exhaustedQuota = user.requests.exhaustedQuota;
@@ -63,7 +63,7 @@ async function getStats(network: string, beginDate: any, endDate: Date, reset: b
                 }
             });
         })
-        .catch((error) => {
+        .catch((error: any) => {
             logging.error(NAMESPACE, 'Error while trying to retrieve users from the database: ', error);
             generalUserStats.error = error;
         });

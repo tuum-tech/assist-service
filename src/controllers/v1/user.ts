@@ -63,7 +63,7 @@ const register = async (req: Request, res: Response, next: NextFunction) => {
         const conn = network === config.blockchain.testnet ? connTestnet : connMainnet;
 
         // Usernames should be unique
-        conn.models.User.find({ username })
+        conn.User.find({ username })
             .exec()
             .then((users: any) => {
                 if (users.length >= 1) {
@@ -77,7 +77,7 @@ const register = async (req: Request, res: Response, next: NextFunction) => {
                     const error = `There already exists another user with the same username "${username}". Please choose a different username.`;
                     return res.status(401).json(commonService.returnError(network, 401, error));
                 } else {
-                    const _user = new conn.models.User({
+                    const _user = new conn.User({
                         _id: new mongoose.Types.ObjectId(),
                         username,
                         password: hash,
@@ -116,9 +116,9 @@ const login = async (req: Request, res: Response, next: NextFunction) => {
     if (!config.blockchain.validNetworks.includes(network)) network = config.blockchain.mainnet;
 
     const conn = network === config.blockchain.testnet ? connTestnet : connMainnet;
-    await conn.models.User.findOne({ username })
+    await conn.User.findOne({ username })
         .exec()
-        .then((user) => {
+        .then((user: any) => {
             bcryptjs.compare(password, user.password, (error, result) => {
                 if (error) {
                     logging.error(NAMESPACE, error.message, error);
@@ -146,7 +146,7 @@ const login = async (req: Request, res: Response, next: NextFunction) => {
                 }
             });
         })
-        .catch((error) => {
+        .catch((error: any) => {
             logging.error(NAMESPACE, 'Error while logging in: ', error);
 
             return res.status(500).json(commonService.returnError(network, 500, error));
@@ -159,7 +159,7 @@ const paymentCreateTx = async (req: Request, res: Response, next: NextFunction) 
 
     const conn = connMainnet;
 
-    const result: any = await conn.models.User.findOne({ username })
+    const result: any = await conn.User.findOne({ username })
         .select('-password')
         .exec()
         .then((user: IUser) => {
@@ -197,7 +197,7 @@ const paymentSignTx = async (req: Request, res: Response, next: NextFunction) =>
 
     const conn = connMainnet;
 
-    const result: any = await conn.models.User.findOne({ username })
+    const result: any = await conn.User.findOne({ username })
         .select('-password')
         .exec()
         .then((user: IUser) => {
@@ -258,12 +258,12 @@ const getAllUsers = async (req: Request, res: Response, next: NextFunction) => {
 
     const conn = network === config.blockchain.testnet ? connTestnet : connMainnet;
 
-    const result: any = await conn.models.User.find()
+    const result: any = await conn.User.find()
         .select('-password')
         .select('-balance')
         .select('-orderId')
         .exec()
-        .then((users) => {
+        .then((users: any) => {
             const data = {
                 users,
                 count: users.length
@@ -284,7 +284,7 @@ const getAllUsers = async (req: Request, res: Response, next: NextFunction) => {
                     return res.status(500).json(commonService.returnError(network, 500, error));
                 });
         })
-        .catch((error) => {
+        .catch((error: any) => {
             logging.error(NAMESPACE, 'Error while trying to get all users: ', error);
 
             return res.status(500).json(commonService.returnError(network, 500, error));

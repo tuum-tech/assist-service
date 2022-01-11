@@ -23,12 +23,12 @@ async function setLatestBlockInfo(network: string) {
             return currentHeight;
         })
         .then((height) => {
-            conn.models.LatestBlockchainState.findOne({ chain: config.blockchain.elaMainchain.name })
+            conn.LatestBlockchainState.findOne({ chain: config.blockchain.elaMainchain.name })
                 .exec()
-                .then((state) => {
+                .then((state: any) => {
                     const latestState =
                         state ||
-                        new conn.models.LatestBlockchainState({
+                        new conn.LatestBlockchainState({
                             _id: new mongoose.Types.ObjectId(),
                             chain: config.blockchain.elaMainchain.name,
                             network
@@ -83,7 +83,7 @@ async function setLatestBlockInfo(network: string) {
                                 });
                         });
                 })
-                .catch((err) => {
+                .catch((err: any) => {
                     logging.error(NAMESPACE, 'Error while trying to retrieve latest state of the blockchain from the database: ', err);
                 });
         })

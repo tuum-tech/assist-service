@@ -18,9 +18,9 @@ const getBlockInfoLatest = async (req: Request, res: Response, next: NextFunctio
 
     const conn = network === config.blockchain.testnet ? connTestnet : connMainnet;
 
-    const result: any = await conn.models.LatestBlockchainState.findOne({ chain: config.blockchain.escSidechain.name })
+    const result: any = await conn.LatestBlockchainState.findOne({ chain: config.blockchain.escSidechain.name })
         .exec()
-        .then((data) => {
+        .then((data: any) => {
             const costInUsd = 0.001;
             accountFunction
                 .handleAPIQuota(conn, authTokenDecoded, costInUsd)
@@ -37,7 +37,7 @@ const getBlockInfoLatest = async (req: Request, res: Response, next: NextFunctio
                     return res.status(500).json(commonService.returnError(network, 500, error));
                 });
         })
-        .catch((error) => {
+        .catch((error: any) => {
             logging.error(NAMESPACE, 'Error while trying to get the latest block info: ', error);
 
             return res.status(500).json(commonService.returnError(network, 500, error));

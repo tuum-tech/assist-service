@@ -41,12 +41,12 @@ async function setLatestBlockInfo(network: string) {
                     return currentHeight;
                 })
                 .then((height) => {
-                    conn.models.LatestBlockchainState.findOne({ chain: config.blockchain.eidSidechain.name })
+                    conn.LatestBlockchainState.findOne({ chain: config.blockchain.eidSidechain.name })
                         .exec()
-                        .then((state) => {
+                        .then((state: any) => {
                             const latestState =
                                 state ||
-                                new conn.models.LatestBlockchainState({
+                                new conn.LatestBlockchainState({
                                     _id: new mongoose.Types.ObjectId(),
                                     chain: config.blockchain.eidSidechain.name,
                                     network
@@ -88,7 +88,7 @@ async function setLatestBlockInfo(network: string) {
                                     return false;
                                 });
                         })
-                        .catch((err) => {
+                        .catch((err: any) => {
                             logging.error(NAMESPACE, 'Error while trying to retrieve latest state of the blockchain from the database: ', err);
                         });
                 })
@@ -112,11 +112,11 @@ async function publishDIDTxPending(network: string) {
 
     const conn = network === config.blockchain.testnet ? connTestnet : connMainnet;
 
-    await conn.models.DidTx.find({ status: config.txStatus.pending })
+    await conn.DidTx.find({ status: config.txStatus.pending })
         .exec()
-        .then((didTxes) => {
+        .then((didTxes: any) => {
             const wallet = config.blockchain.eidSidechain.wallets.keystores[Math.floor(Math.random() * config.blockchain.eidSidechain.wallets.keystores.length)];
-            didTxes.map((didTx, index) => {
+            didTxes.map((didTx: any, index: any) => {
                 logging.info(NAMESPACE, `Using wallet ${wallet.address} to publish ${didTx.did}`);
                 rpcServiceEid
                     .signTx(network, wallet, JSON.stringify(didTx.didRequest), index)
@@ -139,6 +139,7 @@ async function publishDIDTxPending(network: string) {
                                 didTx.blockchainTxReceipt = txReceipt;
                                 if (txReceipt.status) {
                                     didTx.status = config.txStatus.completed;
+                                    didTx.blockchainTxHash = txReceipt.transactionHash;
                                 } else {
                                     didTx.status = config.txStatus.cancelled;
                                     didTx.extraInfo = {
@@ -146,7 +147,6 @@ async function publishDIDTxPending(network: string) {
                                     };
                                     logging.error(NAMESPACE, 'Error while trying to publish DID transaction so changed its status to cancelled');
                                 }
-                                didTx.blockchainTxHash = txReceipt.transactionHash;
                                 didTx.save();
                             });
                         }
@@ -169,7 +169,7 @@ async function publishDIDTxPending(network: string) {
                 publishDIDTxPending(network);
             }, 5000);
         })
-        .catch((err) => {
+        .catch((err: any) => {
             logging.error(NAMESPACE, 'Error while publishing the Pending DID transactions to the blockchain: ', err);
 
             setTimeout(() => {
@@ -306,17 +306,17 @@ async function dailyCronjob(network: string) {
                     txes: []
                 };
 
-                await conn.models.DidTx.find({ createdAt: { $gte: beginDate, $lt: endDate } })
+                await conn.DidTx.find({ createdAt: { $gte: beginDate, $lt: endDate } })
                     .exec()
-                    .then((didTxes) => {
-                        didTxes.map((didTx) => {
+                    .then((didTxes: any) => {
+                        didTxes.map((didTx: any) => {
                             if (didTx.status === config.txStatus.cancelled) {
                                 outlierDidTxesToday.numTxes += 1;
                                 outlierDidTxesToday.txes.push(didTx);
                             }
                         });
                     })
-                    .catch((err) => {
+                    .catch((err: any) => {
                         logging.error(NAMESPACE, 'Error while trying to retrieve outlier transactions from yesterday: ', err);
                     });
                 let outlierTxesTodayHtml: string = `<table><tr><th>Number of outlier transactions</th><th>${outlierDidTxesToday.numTxes}</th></tr></table><br>`;

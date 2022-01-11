@@ -18,9 +18,9 @@ const getBlockInfoLatest = async (req: Request, res: Response, next: NextFunctio
 
     const conn = network === config.blockchain.testnet ? connTestnet : connMainnet;
 
-    const result: any = await conn.models.LatestBlockchainState.findOne({ chain: config.blockchain.elaMainchain.name })
+    const result: any = await conn.LatestBlockchainState.findOne({ chain: config.blockchain.elaMainchain.name })
         .exec()
-        .then((data) => {
+        .then((data: any) => {
             const costInUsd = 0.001;
             accountFunction
                 .handleAPIQuota(conn, authTokenDecoded, costInUsd)
@@ -37,7 +37,7 @@ const getBlockInfoLatest = async (req: Request, res: Response, next: NextFunctio
                     return res.status(500).json(commonService.returnError(network, 500, error));
                 });
         })
-        .catch((error) => {
+        .catch((error: any) => {
             logging.error(NAMESPACE, 'Error while trying to get the latest block info: ', error);
 
             return res.status(500).json(commonService.returnError(network, 500, error));
@@ -56,9 +56,9 @@ const getSupplyEla = async (req: Request, res: Response, next: NextFunction) => 
 
     const conn = connMainnet;
 
-    const result: any = await conn.models.LatestBlockchainState.findOne({ chain: config.blockchain.elaMainchain.name })
+    const result: any = await conn.LatestBlockchainState.findOne({ chain: config.blockchain.elaMainchain.name })
         .exec()
-        .then(async (data) => {
+        .then(async (data: any) => {
             const currentHeight = data.height;
             const minedEla = 5.02283105 * currentHeight;
             const burnedEla = await rpcService.getBalance(network, 'ELANULLXXXXXXXXXXXXXXXXXXXXXYvs3rr');

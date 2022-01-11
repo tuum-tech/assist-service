@@ -6,7 +6,7 @@ import externalService from '../services/v1/external';
 
 const NAMESPACE = 'Function: Account';
 
-async function handleAPIQuota(conn: mongoose.Connection, authTokenDecoded: any, costInUsd: number) {
+async function handleAPIQuota(conn: any, authTokenDecoded: any, costInUsd: number) {
     const username = authTokenDecoded.username;
 
     const user = {} as IUser;
@@ -25,15 +25,15 @@ async function handleAPIQuota(conn: mongoose.Connection, authTokenDecoded: any, 
         error: ''
     };
 
-    await conn.models.User.findOne({ username })
+    await conn.User.findOne({ username })
         .exec()
-        .then(async (u) => {
+        .then(async (u: IUser) => {
             result.user = u;
             const exhaustedQuota: number = result.user.requests.exhaustedQuota;
             const totalQuota: number = result.user.requests.totalQuota;
-            const quotaToExhaust = await conn.models.LatestBlockchainState.findOne({ chain: config.blockchain.elaMainchain.name })
+            const quotaToExhaust = await conn.LatestBlockchainState.findOne({ chain: config.blockchain.elaMainchain.name })
                 .exec()
-                .then((state) => {
+                .then((state: any) => {
                     result.quota.elaPriceUsed = `$${state.elaPriceUsd}`;
                     return Number((costInUsd / state.elaPriceUsd).toFixed(5));
                 });

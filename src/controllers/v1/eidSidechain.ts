@@ -11,7 +11,6 @@ import accountFunction from '../../functions/account';
 import commonService from '../../services/v1/common';
 import rpcServiceEid from '../../services/v1/eidSidechainRpc';
 import rpcServiceEvm from '../../services/v1/evmRpc';
-import IUser from '../../interfaces/user';
 
 const NAMESPACE = 'Controller: EID Sidechain';
 
@@ -70,7 +69,7 @@ const publishDIDTx = async (req: Request, res: Response, next: NextFunction) => 
                         if (account.error) {
                             return res.status(account.retCode).json(commonService.returnError(network, account.retCode, account.error));
                         }
-                        const user: IUser = account.user;
+                        const user: any = account.user;
                         if (network === config.blockchain.mainnet && Boolean(upgradeAccount) === true) {
                             if (user.accountType !== config.user.premiumAccountType) {
                                 user.accountType = config.user.premiumAccountType;
@@ -90,7 +89,7 @@ const publishDIDTx = async (req: Request, res: Response, next: NextFunction) => 
                                 username: user.username
                             };
                         }
-                        const didTx = new conn.models.DidTx({
+                        const didTx = new conn.DidTx({
                             _id: new mongoose.Types.ObjectId(),
                             did,
                             requestFrom,
@@ -138,9 +137,9 @@ const getAllDIDTxes = async (req: Request, res: Response, next: NextFunction) =>
 
     const conn = network === config.blockchain.testnet ? connTestnet : connMainnet;
 
-    const result: any = await conn.models.DidTx.find()
+    const result: any = await conn.DidTx.find()
         .exec()
-        .then((results) => {
+        .then((results: any) => {
             if (results.length === 0) {
                 const error = 'Could not find any DID transactions';
                 logging.error(NAMESPACE, 'Error while trying to get all the DID transactions', error);
@@ -168,7 +167,7 @@ const getAllDIDTxes = async (req: Request, res: Response, next: NextFunction) =>
                     });
             }
         })
-        .catch((error) => {
+        .catch((error: any) => {
             logging.error(NAMESPACE, 'Error while trying to get all the DID transactions: ', error);
 
             return res.status(500).json(commonService.returnError(network, 500, error));
@@ -180,14 +179,15 @@ const getDIDTxFromConfirmationId = async (req: Request, res: Response, next: Nex
     const authTokenDecoded = res.locals.jwt;
 
     const _id = req.params.confirmationId;
+    logging.info(NAMESPACE, `id: ${_id}`);
     let network = req.query.network ? req.query.network.toString() : config.blockchain.mainnet;
     if (!config.blockchain.validNetworks.includes(network)) network = config.blockchain.mainnet;
 
     const conn = network === config.blockchain.testnet ? connTestnet : connMainnet;
 
-    const result: any = await conn.models.DidTx.findOne({ _id })
+    const result: any = await conn.DidTx.findOne({ _id })
         .exec()
-        .then((didTx) => {
+        .then((didTx: any) => {
             if (!didTx) {
                 const error: string = 'Could not find a DID transaction in the database';
                 logging.error(NAMESPACE, 'Error while trying to get a DID transaction from confirmationId', error);
@@ -214,7 +214,7 @@ const getDIDTxFromConfirmationId = async (req: Request, res: Response, next: Nex
                     });
             }
         })
-        .catch((error) => {
+        .catch((error: any) => {
             logging.error(NAMESPACE, 'Error while trying to get a DID transaction from confirmationId: ', error);
 
             return res.status(500).json(commonService.returnError(network, 500, error));
@@ -281,9 +281,9 @@ const getBlockInfoLatest = (req: Request, res: Response, next: NextFunction) => 
 
     const conn = network === config.blockchain.testnet ? connTestnet : connMainnet;
 
-    const result: any = conn.models.LatestBlockchainState.findOne({ chain: config.blockchain.eidSidechain.name })
+    const result: any = conn.LatestBlockchainState.findOne({ chain: config.blockchain.eidSidechain.name })
         .exec()
-        .then((data) => {
+        .then((data: any) => {
             const costInUsd = 0.001;
             accountFunction
                 .handleAPIQuota(conn, authTokenDecoded, costInUsd)
@@ -300,7 +300,7 @@ const getBlockInfoLatest = (req: Request, res: Response, next: NextFunction) => 
                     return res.status(500).json(commonService.returnError(network, 500, error));
                 });
         })
-        .catch((error) => {
+        .catch((error: any) => {
             logging.error(NAMESPACE, 'Error while trying to get the latest block info: ', error);
 
             return res.status(500).json(commonService.returnError(network, 500, error));

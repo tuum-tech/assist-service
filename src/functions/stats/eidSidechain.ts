@@ -25,12 +25,8 @@ async function getTxStats(network: string, beginDate: any, endDate: Date) {
         createdAtFilter = { ...createdAtFilter, ...greaterThanEqualToFilter };
     }
 
-    await conn.models.DidTx.aggregate([
-        { $match: { createdAt: createdAtFilter } },
-        { $group: { _id: '$requestFrom', count: { $sum: 1 } } },
-        { $project: { _id: 0, requestFrom: '$_id', count: '$count' } }
-    ])
-        .then((result) => {
+    await conn.DidTx.aggregate([{ $match: { createdAt: createdAtFilter } }, { $group: { _id: '$requestFrom', count: { $sum: 1 } } }, { $project: { _id: 0, requestFrom: '$_id', count: '$count' } }])
+        .then((result: any) => {
             for (const r of result) {
                 const numTxes = r.count;
                 generalTxesStats.data.didTxes.numTxes += numTxes;
