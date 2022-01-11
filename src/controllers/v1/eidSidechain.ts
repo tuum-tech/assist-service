@@ -188,6 +188,7 @@ const getDIDTxFromConfirmationId = async (req: Request, res: Response, next: Nex
     const result: any = await conn.DidTx.findOne({ _id })
         .exec()
         .then((didTx: any) => {
+            logging.info(NAMESPACE, `didTx: ${didTx}`);
             if (!didTx) {
                 const error: string = 'Could not find a DID transaction in the database';
                 logging.error(NAMESPACE, 'Error while trying to get a DID transaction from confirmationId', error);

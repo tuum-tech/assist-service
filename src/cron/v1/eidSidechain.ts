@@ -116,14 +116,20 @@ async function publishDIDTxPending(network: string) {
         .exec()
         .then((didTxes: any) => {
             const wallet = config.blockchain.eidSidechain.wallets.keystores[Math.floor(Math.random() * config.blockchain.eidSidechain.wallets.keystores.length)];
-            didTxes.map((didTx: any, index: any) => {
+            didTxes.map(async (didTx: any, index: any) => {
+                if (didTx.walletUsed) {
+                    logging.info(NAMESPACE, `${didTx.did} is already being published...`);
+                    return;
+                }
                 logging.info(NAMESPACE, `Using wallet ${wallet.address} to publish ${didTx.did}`);
+
+                didTx.walletUsed = wallet.address;
+                didTx.status = config.txStatus.processing;
+                didTx.save();
+
                 rpcServiceEid
                     .signTx(network, wallet, JSON.stringify(didTx.didRequest), index)
                     .then((res) => {
-                        didTx.walletUsed = res.txDetails.walletUsed;
-                        didTx.status = config.txStatus.processing;
-                        didTx.save();
                         if (res.error) {
                             logging.error(NAMESPACE, 'Error while publishing the a pending DID transaction to the blockchain: ', res.error);
 
@@ -147,6 +153,7 @@ async function publishDIDTxPending(network: string) {
                                     };
                                     logging.error(NAMESPACE, 'Error while trying to publish DID transaction so changed its status to cancelled');
                                 }
+
                                 didTx.save();
                             });
                         }
