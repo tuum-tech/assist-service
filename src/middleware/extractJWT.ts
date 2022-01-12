@@ -7,7 +7,7 @@ import { Request, Response, NextFunction } from 'express';
 const NAMESPACE = 'Middleware: User Auth';
 
 const extractJWT = (req: Request, res: Response, next: NextFunction) => {
-    logging.info(NAMESPACE, 'Validating token');
+    logging.info(NAMESPACE, '', 'Validating token');
 
     const getNetwork = (): string => {
         let result = config.blockchain.mainnet;
@@ -26,7 +26,7 @@ const extractJWT = (req: Request, res: Response, next: NextFunction) => {
     if (token) {
         jwt.verify(token, config.server.token.secret, (error: any, decoded: any) => {
             if (error) {
-                logging.error(NAMESPACE, 'Error while trying to verify token', error);
+                logging.error(NAMESPACE, '', 'Error while trying to verify token', error);
                 return res.status(404).json(commonService.returnError(getNetwork(), 404, error));
             } else {
                 res.locals.jwt = decoded;
@@ -34,7 +34,7 @@ const extractJWT = (req: Request, res: Response, next: NextFunction) => {
             }
         });
     } else {
-        logging.error(NAMESPACE, 'Error while trying to verify token', 'Unauthorized');
+        logging.error(NAMESPACE, '', 'Error while trying to verify token', 'Unauthorized');
         return res.status(401).json(commonService.returnError(getNetwork(), 401, 'Unathorized'));
     }
 };

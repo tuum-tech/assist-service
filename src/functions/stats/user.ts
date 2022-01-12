@@ -64,7 +64,7 @@ async function getStats(network: string, beginDate: any, endDate: Date, reset: b
             });
         })
         .catch((error: any) => {
-            logging.error(NAMESPACE, 'Error while trying to retrieve users from the database: ', error);
+            logging.error(NAMESPACE, '', 'Error while trying to retrieve users from the database: ', error);
             generalUserStats.error = error;
         });
 

@@ -7,7 +7,7 @@ import LatestBlockchainStateSchema from '../schemas/latestBlockchainState';
 
 const NAMESPACE = 'Connections: Mainnet';
 
-logging.info(NAMESPACE, `Connecting to mongodb mainnet at ${config.mongo.mainnet.url}`);
+logging.info(NAMESPACE, '', `Connecting to mongodb mainnet at ${config.mongo.mainnet.url}`);
 
 const conn = mongoose.createConnection(config.mongo.mainnet.url, config.mongo.options);
 const connMainnet = {

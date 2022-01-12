@@ -60,7 +60,7 @@ async function handleAPIQuota(conn: any, authTokenDecoded: any, costInUsd: numbe
                             'Balance on account: ' +
                             result.user.balance +
                             ' ELA. ';
-                        logging.error(NAMESPACE, 'Error while trying to authenticate: ', error);
+                        logging.error(NAMESPACE, u.did, 'Error while trying to authenticate: ', error);
 
                         result.error = error;
                         result.retCode = 401;
@@ -78,7 +78,7 @@ async function handleAPIQuota(conn: any, authTokenDecoded: any, costInUsd: numbe
                         quotaToExhaust +
                         ' Your remaining Quota: ' +
                         (totalQuota - exhaustedQuota);
-                    logging.error(NAMESPACE, 'Error while trying to authenticate: ', error);
+                    logging.error(NAMESPACE, u.did, 'Error while trying to authenticate: ', error);
 
                     result.error = error;
                     result.retCode = 401;
@@ -91,7 +91,7 @@ async function handleAPIQuota(conn: any, authTokenDecoded: any, costInUsd: numbe
             result.user.requests.all += 1;
         })
         .catch((error: any) => {
-            logging.error(NAMESPACE, 'Error while trying to validate the user: ', error);
+            logging.error(NAMESPACE, '', 'Error while trying to validate the user: ', error);
 
             result.error = error;
             result.retCode = 500;

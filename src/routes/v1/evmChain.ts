@@ -2,9 +2,9 @@ import express from 'express';
 import controller from '../../controllers/v1/evmChain';
 import extractJWT from '../../middleware/extractJWT';
 
-const router = express.Router();
+const app = express.Router();
 
-router.post('/tokenBalance', extractJWT, controller.getTokenBalance);
-router.get('/get/supply/mtrl', controller.getSupplyMtrl);
+app.post('/tokenBalance', extractJWT, controller.getTokenBalance);
+app.get('/get/supply/mtrl', controller.getSupplyMtrl);
 
-export = router;
+export = app;

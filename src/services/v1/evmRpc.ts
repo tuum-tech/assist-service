@@ -54,7 +54,7 @@ async function getBlockHeight(network: string, testnet: boolean) {
             }
         })
         .catch((error: any) => {
-            logging.error(NAMESPACE, 'Error while trying to get block height: ', error);
+            logging.error(NAMESPACE, '', 'Error while trying to get block height: ', error);
 
             return commonService.returnError(network, 500, error);
         });
@@ -76,7 +76,7 @@ async function getBalance(network: string, address: string, testnet: boolean) {
             }
         })
         .catch((error: any) => {
-            logging.error(NAMESPACE, 'Error while trying to get balance of an address: ', error);
+            logging.error(NAMESPACE, '', 'Error while trying to get balance of an address: ', error);
 
             return commonService.returnError(network, 500, error);
         });
@@ -121,7 +121,7 @@ async function getTokenBalance(network: string, tokenAddress: string, walletAddr
             }
         })
         .catch((error: any) => {
-            logging.error(NAMESPACE, 'Error while trying to get balance of an address: ', error);
+            logging.error(NAMESPACE, '', 'Error while trying to get balance of an address: ', error);
 
             return commonService.returnError(network, 500, error);
         });

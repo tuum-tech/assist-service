@@ -10,7 +10,7 @@ const signJWT = (user: IUser, callback: (error: Error | null, token: string | nu
     const expirationTime = timeSinceEpoch + Number(config.server.token.expireTime) * 100000;
     const expirationTimeInSeconds = Math.floor(expirationTime / 1000);
 
-    logging.info(NAMESPACE, `Attempting to sign token for ${user._id} - ${user.username}`);
+    logging.info(NAMESPACE, '', `Attempting to sign token for ${user._id} - ${user.username}`);
 
     try {
         jwt.sign(
@@ -32,7 +32,7 @@ const signJWT = (user: IUser, callback: (error: Error | null, token: string | nu
             }
         );
     } catch (error: any) {
-        logging.error(NAMESPACE, error.message, error);
+        logging.error(NAMESPACE, '', error.message, error);
         callback(error, null);
     }
 };

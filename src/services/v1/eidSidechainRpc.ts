@@ -61,7 +61,7 @@ async function signTx(network: string, wallet: any, payload: string, index: numb
         const nonce: any = await web3.eth.getTransactionCount(walletAddress, 'pending').then((n: any) => {
             return n + index;
         });
-        logging.info(NAMESPACE, `Using nonce ${nonce} for ${walletAddress} to publish the DID`);
+        logging.info(NAMESPACE, '', `Using nonce ${nonce} for ${walletAddress} to publish the DID`);
         let gas = 1000000;
         try {
             // Estimate gas cost
@@ -73,10 +73,10 @@ async function signTx(network: string, wallet: any, payload: string, index: numb
             logging.info(NAMESPACE, 'Error while trying to estimate gas:', error);
             res.error = error.toString();
         }
-        logging.info(NAMESPACE, `Using gas ${gas} for ${walletAddress} to publish the DID`);
+        logging.info(NAMESPACE, '', `Using gas ${gas} for ${walletAddress} to publish the DID`);
 
         const gasPrice = await web3.eth.getGasPrice();
-        logging.info(NAMESPACE, `Using gasPrice ${gasPrice} for ${walletAddress} to publish the DID`);
+        logging.info(NAMESPACE, '', `Using gasPrice ${gasPrice} for ${walletAddress} to publish the DID`);
 
         const to = web3.utils.toChecksumAddress(contractAddress);
 
@@ -94,7 +94,7 @@ async function signTx(network: string, wallet: any, payload: string, index: numb
         });
         res.txDetails.rawTx = signedTx.rawTransaction;
     } catch (err: any) {
-        logging.info(NAMESPACE, 'Error while trying to sign the DID transaction:', err.toString());
+        logging.info(NAMESPACE, '', 'Error while trying to sign the DID transaction:', err.toString());
         res.error = err.toString();
     }
 

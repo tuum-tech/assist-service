@@ -1,8 +1,8 @@
 import express from 'express';
 import controller from '../../controllers/v1/healthCheck';
 
-const router = express.Router();
+const app = express.Router();
 
-router.get('/ping', controller.serverHealthCheck);
+app.get('/ping', controller.serverHealthCheck);
 
-export = router;
+export = app;

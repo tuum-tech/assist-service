@@ -18,7 +18,7 @@ async function setLatestBlockInfo(network: string) {
     cron.schedule(
         '*/10 * * * * *',
         async () => {
-            logging.info(NAMESPACE, `Started cronjob: setLatestBlockInfo: ${network}`);
+            logging.info(NAMESPACE, '', `Started cronjob: setLatestBlockInfo: ${network}`);
 
             const rpcUrl = network === config.blockchain.testnet ? config.blockchain.eidSidechain.testnet.rpcUrl : config.blockchain.eidSidechain.mainnet.rpcUrl;
             const backupRpcUrl = network === config.blockchain.testnet ? config.blockchain.eidSidechain.testnet.backupRpcUrl : config.blockchain.eidSidechain.mainnet.backupRpcUrl;
@@ -84,7 +84,7 @@ async function setLatestBlockInfo(network: string) {
                                     latestState.save();
                                 })
                                 .catch((err: any) => {
-                                    logging.error(NAMESPACE, 'Error while getting the latest block from the blockchain: ', err);
+                                    logging.error(NAMESPACE, '', 'Error while getting the latest block from the blockchain: ', err);
                                     return false;
                                 });
                         })
@@ -93,10 +93,10 @@ async function setLatestBlockInfo(network: string) {
                         });
                 })
                 .then(() => {
-                    logging.info(NAMESPACE, `Completed cronjob: setLatestBlockInfo: ${network}`);
+                    logging.info(NAMESPACE, '', `Completed cronjob: setLatestBlockInfo: ${network}`);
                 })
                 .catch((err: any) => {
-                    logging.error(NAMESPACE, 'Error while trying to run the cronjob to get latest block details: ', err.toString());
+                    logging.error(NAMESPACE, '', 'Error while trying to run the cronjob to get latest block details: ', err.toString());
                 });
         },
         { timezone: 'Etc/UTC' }
@@ -104,7 +104,7 @@ async function setLatestBlockInfo(network: string) {
 }
 
 async function publishDIDTxPending(network: string) {
-    logging.info(NAMESPACE, `Started cronjob: publishDIDTxPending: ${network}`);
+    logging.info(NAMESPACE, '', `Started cronjob: publishDIDTxPending: ${network}`);
 
     const rpcUrl = network === config.blockchain.testnet ? config.blockchain.eidSidechain.testnet.rpcUrl : config.blockchain.eidSidechain.mainnet.rpcUrl;
 
@@ -118,10 +118,10 @@ async function publishDIDTxPending(network: string) {
             const wallet = config.blockchain.eidSidechain.wallets.keystores[Math.floor(Math.random() * config.blockchain.eidSidechain.wallets.keystores.length)];
             didTxes.map(async (didTx: any, index: any) => {
                 if (didTx.walletUsed) {
-                    logging.info(NAMESPACE, `${didTx.did} is already being published...`);
+                    logging.info(NAMESPACE, '', `${didTx.did} is already being published...`);
                     return;
                 }
-                logging.info(NAMESPACE, `Using wallet ${wallet.address} to publish ${didTx.did}`);
+                logging.info(NAMESPACE, '', `Using wallet ${wallet.address} to publish ${didTx.did}`);
 
                 didTx.walletUsed = wallet.address;
                 didTx.status = config.txStatus.processing;
@@ -131,7 +131,7 @@ async function publishDIDTxPending(network: string) {
                     .signTx(network, wallet, JSON.stringify(didTx.didRequest), index)
                     .then((res) => {
                         if (res.error) {
-                            logging.error(NAMESPACE, 'Error while publishing the a pending DID transaction to the blockchain: ', res.error);
+                            logging.error(NAMESPACE, '', 'Error while publishing the a pending DID transaction to the blockchain: ', res.error);
 
                             didTx.status = config.txStatus.cancelled;
                             didTx.extraInfo = {
@@ -140,7 +140,7 @@ async function publishDIDTxPending(network: string) {
                             didTx.save();
                         } else {
                             web3.eth.sendSignedTransaction(res.txDetails.rawTx).on('receipt', (txReceipt) => {
-                                logging.info(NAMESPACE, `Pending tx ${res.txDetails.rawTx} has now been sent`);
+                                logging.info(NAMESPACE, '', `Pending tx ${res.txDetails.rawTx} has now been sent`);
 
                                 didTx.blockchainTxReceipt = txReceipt;
                                 if (txReceipt.status) {
@@ -151,7 +151,7 @@ async function publishDIDTxPending(network: string) {
                                     didTx.extraInfo = {
                                         error: 'Error while trying to publish DID transaction as the status of the receipt is false so changed its status to cancelled'
                                     };
-                                    logging.error(NAMESPACE, 'Error while trying to publish DID transaction so changed its status to cancelled');
+                                    logging.error(NAMESPACE, '', 'Error while trying to publish DID transaction so changed its status to cancelled');
                                 }
 
                                 didTx.save();
@@ -170,14 +170,14 @@ async function publishDIDTxPending(network: string) {
             });
         })
         .then(() => {
-            logging.info(NAMESPACE, `Completed cronjob: publishDIDTxPending: ${network}`);
+            logging.info(NAMESPACE, '', `Completed cronjob: publishDIDTxPending: ${network}`);
 
             setTimeout(() => {
                 publishDIDTxPending(network);
             }, 5000);
         })
         .catch((err: any) => {
-            logging.error(NAMESPACE, 'Error while publishing the Pending DID transactions to the blockchain: ', err);
+            logging.error(NAMESPACE, '', 'Error while publishing the Pending DID transactions to the blockchain: ', err);
 
             setTimeout(() => {
                 publishDIDTxPending(network);
@@ -190,7 +190,7 @@ async function dailyCronjob(network: string) {
     cron.schedule(
         '0 0 0 * * *',
         async () => {
-            logging.info(NAMESPACE, `Started cronjob: dailyCronjob: ${network}`);
+            logging.info(NAMESPACE, '', `Started cronjob: dailyCronjob: ${network}`);
 
             let beginDate = new Date();
             beginDate = new Date(`${beginDate.getUTCFullYear()}-${('0' + (beginDate.getUTCMonth() + 1)).slice(-2)}-${('0' + beginDate.getUTCDate()).slice(-2)}`);
@@ -213,7 +213,7 @@ async function dailyCronjob(network: string) {
                         if (balanceResponse.meta.message === 'OK') {
                             return balanceResponse.data.value;
                         } else {
-                            logging.error(NAMESPACE, `Error while getting balance of '${address}': `, balanceResponse.error);
+                            logging.error(NAMESPACE, '', `Error while getting balance of '${address}': `, balanceResponse.error);
                             return 'ERR';
                         }
                     });
@@ -324,7 +324,7 @@ async function dailyCronjob(network: string) {
                         });
                     })
                     .catch((err: any) => {
-                        logging.error(NAMESPACE, 'Error while trying to retrieve outlier transactions from yesterday: ', err);
+                        logging.error(NAMESPACE, '', 'Error while trying to retrieve outlier transactions from yesterday: ', err);
                     });
                 let outlierTxesTodayHtml: string = `<table><tr><th>Number of outlier transactions</th><th>${outlierDidTxesToday.numTxes}</th></tr></table><br>`;
 
@@ -383,7 +383,7 @@ async function dailyCronjob(network: string) {
             const subject: string = `Assist Service Daily Stats - ${network}`;
             sendNotification.sendEmail(subject, config.smtpCreds.sender, htmlContent);
 
-            logging.info(NAMESPACE, `Completed cronjob: dailyCronjob: ${network}`);
+            logging.info(NAMESPACE, '', `Completed cronjob: dailyCronjob: ${network}`);
         },
         { timezone: 'Etc/UTC' }
     );

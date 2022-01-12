@@ -17,7 +17,7 @@ import jwtDecode, { JwtPayload } from 'jwt-decode';
 const NAMESPACE = 'Controller: User';
 
 const validateToken = async (req: Request, res: Response, next: NextFunction) => {
-    logging.info(NAMESPACE, 'Token validated, user authorized.');
+    logging.info(NAMESPACE, '', 'Token validated, user authorized.');
 
     const token: string = req.headers.authorization?.split(' ')[1] || '';
 
@@ -99,7 +99,7 @@ const register = async (req: Request, res: Response, next: NextFunction) => {
                             return res.status(201).json(commonService.returnSuccess(network, 200, data));
                         })
                         .catch((error: any) => {
-                            logging.error(NAMESPACE, 'Error while trying to register a new user: ', error);
+                            logging.error(NAMESPACE, '', 'Error while trying to register a new user: ', error);
 
                             return res.status(500).json(commonService.returnError(network, 500, error));
                         });
@@ -121,13 +121,13 @@ const login = async (req: Request, res: Response, next: NextFunction) => {
         .then((user: any) => {
             bcryptjs.compare(password, user.password, (error, result) => {
                 if (error) {
-                    logging.error(NAMESPACE, error.message, error);
+                    logging.error(NAMESPACE, '', error.message, error);
 
                     return res.status(401).json(commonService.returnError(network, 401, 'Password mismatch'));
                 } else if (result) {
                     signJWT(user, (err, token) => {
                         if (err) {
-                            logging.error(NAMESPACE, 'Unable to sign token: ', err);
+                            logging.error(NAMESPACE, '', 'Unable to sign token: ', err);
 
                             return res.status(500).json(commonService.returnError(network, 500, err));
                         } else if (token) {
@@ -147,7 +147,7 @@ const login = async (req: Request, res: Response, next: NextFunction) => {
             });
         })
         .catch((error: any) => {
-            logging.error(NAMESPACE, 'Error while logging in: ', error);
+            logging.error(NAMESPACE, '', 'Error while logging in: ', error);
 
             return res.status(500).json(commonService.returnError(network, 500, error));
         });
@@ -182,7 +182,7 @@ const paymentCreateTx = async (req: Request, res: Response, next: NextFunction) 
             return res.status(200).json(commonService.returnSuccess(config.blockchain.mainnet, 200, data));
         })
         .catch((error: any) => {
-            logging.error(NAMESPACE, 'Error while trying to create a payment order to top up the account: ', error);
+            logging.error(NAMESPACE, '', 'Error while trying to create a payment order to top up the account: ', error);
 
             return res.status(500).json(commonService.returnError(config.blockchain.mainnet, 500, error));
         });
@@ -237,13 +237,13 @@ const paymentSignTx = async (req: Request, res: Response, next: NextFunction) =>
                     return res.status(200).json(commonService.returnSuccess(config.blockchain.mainnet, 200, data));
                 })
                 .catch((error: any) => {
-                    logging.error(NAMESPACE, 'Error while trying to get memo from the transaction: ', error);
+                    logging.error(NAMESPACE, '', 'Error while trying to get memo from the transaction: ', error);
 
                     return res.status(500).json(commonService.returnError(config.blockchain.mainnet, 500, error));
                 });
         })
         .catch((error: any) => {
-            logging.error(NAMESPACE, 'Error while trying to sign the payment order to top up the account: ', error);
+            logging.error(NAMESPACE, '', 'Error while trying to sign the payment order to top up the account: ', error);
 
             return res.status(500).json(commonService.returnError(config.blockchain.mainnet, 500, error));
         });
@@ -273,19 +273,20 @@ const getAllUsers = async (req: Request, res: Response, next: NextFunction) => {
                 .handleAPIQuota(conn, authTokenDecoded, costInUsd)
                 .then((account) => {
                     if (account.error) {
+                        logging.error(NAMESPACE, account.user.did, 'Error while trying to find the user in the database: ', account.error);
                         return res.status(account.retCode).json(commonService.returnError(network, account.retCode, account.error));
                     }
                     account.user.save();
                     return res.status(200).json(commonService.returnSuccess(network, 200, data, account.quota));
                 })
                 .catch((error) => {
-                    logging.error(NAMESPACE, 'Error while trying to verify account API quota', error);
+                    logging.error(NAMESPACE, '', 'Error while trying to verify account API quota', error);
 
                     return res.status(500).json(commonService.returnError(network, 500, error));
                 });
         })
         .catch((error: any) => {
-            logging.error(NAMESPACE, 'Error while trying to get all users: ', error);
+            logging.error(NAMESPACE, '', 'Error while trying to get all users: ', error);
 
             return res.status(500).json(commonService.returnError(network, 500, error));
         });
@@ -315,7 +316,7 @@ const getNewUserStats = async (req: Request, res: Response, next: NextFunction) 
 
     const result: any = await userStats.getStats(network, beginDate, endDate).then((stats) => {
         if (stats.error !== null) {
-            logging.error(NAMESPACE, 'Error while trying to get user stats: ', stats.error);
+            logging.error(NAMESPACE, '', 'Error while trying to get user stats: ', stats.error);
             return res.status(500).json(commonService.returnError(network, 500, stats.error));
         } else {
             const data = stats.data;
@@ -327,15 +328,14 @@ const getNewUserStats = async (req: Request, res: Response, next: NextFunction) 
                 .handleAPIQuota(conn, authTokenDecoded, costInUsd)
                 .then((account) => {
                     if (account.error) {
-                        logging.error(NAMESPACE, 'Error while trying to get user stats: ', account.error);
-
+                        logging.error(NAMESPACE, account.user.did, 'Error while trying to find the user in the database: ', account.error);
                         return res.status(account.retCode).json(commonService.returnError(network, account.retCode, account.error));
                     }
                     account.user.save();
                     return res.status(200).json(commonService.returnSuccess(network, 200, data, account.quota));
                 })
                 .catch((error) => {
-                    logging.error(NAMESPACE, 'Error while trying to verify account API quota', error);
+                    logging.error(NAMESPACE, '', 'Error while trying to verify account API quota', error);
 
                     return res.status(500).json(commonService.returnError(network, 500, error));
                 });

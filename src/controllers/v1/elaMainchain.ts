@@ -26,19 +26,20 @@ const getBlockInfoLatest = async (req: Request, res: Response, next: NextFunctio
                 .handleAPIQuota(conn, authTokenDecoded, costInUsd)
                 .then((account) => {
                     if (account.error) {
+                        logging.error(NAMESPACE, account.user.did, 'Error while trying to find the user in the database: ', account.error);
                         return res.status(account.retCode).json(commonService.returnError(network, account.retCode, account.error));
                     }
                     account.user.save();
                     return res.status(200).json(commonService.returnSuccess(network, 200, data, account.quota));
                 })
                 .catch((error) => {
-                    logging.error(NAMESPACE, 'Error while trying to verify account API quota', error);
+                    logging.error(NAMESPACE, '', 'Error while trying to verify account API quota', error);
 
                     return res.status(500).json(commonService.returnError(network, 500, error));
                 });
         })
         .catch((error: any) => {
-            logging.error(NAMESPACE, 'Error while trying to get the latest block info: ', error);
+            logging.error(NAMESPACE, '', 'Error while trying to get the latest block info: ', error);
 
             return res.status(500).json(commonService.returnError(network, 500, error));
         });
@@ -80,7 +81,7 @@ const getSupplyEla = async (req: Request, res: Response, next: NextFunction) => 
             return res.status(200).json(elaAmount);
         })
         .catch((error: any) => {
-            logging.error(NAMESPACE, `Error while trying to get supply of ELA: `, error);
+            logging.error(NAMESPACE, '', `Error while trying to get supply of ELA: `, error);
 
             return res.status(500).json(commonService.returnError(network, 500, error));
         });

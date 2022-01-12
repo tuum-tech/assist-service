@@ -30,7 +30,7 @@ async function getBlockHeight(network: string) {
             }
         })
         .catch((error: any) => {
-            logging.error(NAMESPACE, 'Error while trying to get block height: ', error);
+            logging.error(NAMESPACE, '', 'Error while trying to get block height: ', error);
 
             return commonService.returnError(network, 500, error);
         });
@@ -58,7 +58,7 @@ async function getBlockInfoByHeight(network: string, height: number) {
             }
         })
         .catch((error: any) => {
-            logging.error(NAMESPACE, 'Error while trying to get block height: ', error);
+            logging.error(NAMESPACE, '', 'Error while trying to get block height: ', error);
 
             return commonService.returnError(network, 500, error);
         });
@@ -86,7 +86,7 @@ async function getBalance(network: string, address: string) {
             }
         })
         .catch((error: any) => {
-            logging.error(NAMESPACE, 'Error while trying to get balance of an address: ', error);
+            logging.error(NAMESPACE, '', 'Error while trying to get balance of an address: ', error);
 
             return commonService.returnError(network, 500, error);
         });
@@ -115,7 +115,7 @@ async function getRawTransaction(network: string, txHash: string) {
             }
         })
         .catch((error: any) => {
-            logging.error(NAMESPACE, 'Error while trying to get raw transaction: ', error);
+            logging.error(NAMESPACE, '', 'Error while trying to get raw transaction: ', error);
 
             return commonService.returnError(network, 500, error);
         });
@@ -154,7 +154,7 @@ async function getMemoFromTransaction(network: string, txHash: string) {
             }
         })
         .catch((error: any) => {
-            logging.error(NAMESPACE, 'Error while trying to get memo from the transaction: ', error);
+            logging.error(NAMESPACE, '', 'Error while trying to get memo from the transaction: ', error);
 
             return commonService.returnError(network, 500, error);
         });
@@ -183,7 +183,7 @@ async function getMiningInfo(network: string) {
             }
         })
         .catch((error: any) => {
-            logging.error(NAMESPACE, 'Error while trying to get mining info: ', error);
+            logging.error(NAMESPACE, '', 'Error while trying to get mining info: ', error);
 
             return commonService.returnError(network, 500, error);
         });
@@ -221,7 +221,7 @@ async function getDPoSValidators(network: string, height: number = 0) {
             }
         })
         .catch((error: any) => {
-            logging.error(NAMESPACE, 'Error while trying to get block info by height: ', error);
+            logging.error(NAMESPACE, '', 'Error while trying to get block info by height: ', error);
 
             arbitersInfo.error = error;
         });
@@ -260,7 +260,7 @@ async function getDPoSValidators(network: string, height: number = 0) {
             }
         })
         .catch((error: any) => {
-            logging.error(NAMESPACE, 'Error while trying to get arbiters info: ', error);
+            logging.error(NAMESPACE, '', 'Error while trying to get arbiters info: ', error);
 
             arbitersInfo.error = error;
         });
@@ -333,7 +333,7 @@ async function getDPoSValidators(network: string, height: number = 0) {
             }
         })
         .catch((error: any) => {
-            logging.error(NAMESPACE, 'Error while trying to get mining info: ', error);
+            logging.error(NAMESPACE, '', 'Error while trying to get mining info: ', error);
 
             return commonService.returnError(network, 500, error);
         });

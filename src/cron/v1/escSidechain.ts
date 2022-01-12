@@ -14,7 +14,7 @@ async function setLatestBlockInfo(network: string) {
     cron.schedule(
         '*/10 * * * * *',
         async () => {
-            logging.info(NAMESPACE, `Started cronjob: setLatestBlockInfo: ${network}`);
+            logging.info(NAMESPACE, '', `Started cronjob: setLatestBlockInfo: ${network}`);
 
             const rpcUrl = network === config.blockchain.testnet ? config.blockchain.escSidechain.testnet.rpcUrl : config.blockchain.escSidechain.mainnet.rpcUrl;
             const backupRpcUrl = network === config.blockchain.testnet ? config.blockchain.escSidechain.testnet.backupRpcUrl : config.blockchain.escSidechain.mainnet.backupRpcUrl;
@@ -78,18 +78,18 @@ async function setLatestBlockInfo(network: string) {
                                     latestState.save();
                                 })
                                 .catch((err: any) => {
-                                    logging.error(NAMESPACE, 'Error while getting the latest block from the blockchain: ', err);
+                                    logging.error(NAMESPACE, '', 'Error while getting the latest block from the blockchain: ', err);
                                 });
                         })
                         .catch((err: any) => {
-                            logging.error(NAMESPACE, 'Error while trying to retrieve latest state of the blockchain from the database: ', err);
+                            logging.error(NAMESPACE, '', 'Error while trying to retrieve latest state of the blockchain from the database: ', err);
                         });
                 })
                 .then(() => {
-                    logging.info(NAMESPACE, `Completed cronjob: setLatestBlockInfo: ${network}`);
+                    logging.info(NAMESPACE, '', `Completed cronjob: setLatestBlockInfo: ${network}`);
                 })
                 .catch((err: any) => {
-                    logging.error(NAMESPACE, 'Error while trying to run the cronjob to get latest block details: ', err.toString());
+                    logging.error(NAMESPACE, '', 'Error while trying to run the cronjob to get latest block details: ', err.toString());
                 });
         },
         { timezone: 'Etc/UTC' }

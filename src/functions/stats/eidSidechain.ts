@@ -43,7 +43,7 @@ async function getTxStats(network: string, beginDate: any, endDate: Date) {
             }
         })
         .catch((error) => {
-            logging.error(NAMESPACE, 'Error while trying to aggregate TX stats: ', error);
+            logging.error(NAMESPACE, '', 'Error while trying to aggregate TX stats: ', error);
             generalTxesStats.error = error;
         });
 

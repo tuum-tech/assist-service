@@ -9,7 +9,7 @@ import connTestnet from '../../connections/testnet';
 const NAMESPACE = 'Cron: ELA Mainchain';
 
 async function setLatestBlockInfo(network: string) {
-    logging.info(NAMESPACE, `Started cronjob: setLatestBlockInfo: ${network}`);
+    logging.info(NAMESPACE, '', `Started cronjob: setLatestBlockInfo: ${network}`);
 
     const rpcUrl = network === config.blockchain.testnet ? config.blockchain.elaMainchain.testnet.rpcUrl : config.blockchain.elaMainchain.mainnet.rpcUrl;
     const backupRpcUrl = network === config.blockchain.testnet ? config.blockchain.elaMainchain.testnet.backupRpcUrl : config.blockchain.elaMainchain.mainnet.backupRpcUrl;
@@ -78,7 +78,7 @@ async function setLatestBlockInfo(network: string) {
                                     latestState.save();
                                 })
                                 .catch((err: any) => {
-                                    logging.error(NAMESPACE, 'Error while getting the latest block from the blockchain: ', err);
+                                    logging.error(NAMESPACE, '', 'Error while getting the latest block from the blockchain: ', err);
                                     return false;
                                 });
                         });
@@ -88,13 +88,13 @@ async function setLatestBlockInfo(network: string) {
                 });
         })
         .then(() => {
-            logging.info(NAMESPACE, `Completed cronjob: setLatestBlockInfo: ${network}`);
+            logging.info(NAMESPACE, '', `Completed cronjob: setLatestBlockInfo: ${network}`);
             setTimeout(() => {
                 setLatestBlockInfo(network);
             }, 60000);
         })
         .catch((err) => {
-            logging.error(NAMESPACE, 'Error while trying to run the cronjob to get latest block info: ', err);
+            logging.error(NAMESPACE, '', 'Error while trying to run the cronjob to get latest block info: ', err);
             setTimeout(() => {
                 setLatestBlockInfo(network);
             }, 60000);

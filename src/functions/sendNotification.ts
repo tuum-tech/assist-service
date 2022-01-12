@@ -5,7 +5,7 @@ import logging from '../config/logging';
 const NAMESPACE = 'Cron: EID Sidechain';
 
 async function sendEmail(subject: string, to: string, html: string, attachments?: any) {
-    logging.info(NAMESPACE, 'Started sending email');
+    logging.info(NAMESPACE, '', 'Started sending email');
 
     const transporter = nodemailer.createTransport({
         host: config.smtpCreds.smtpServer,
@@ -31,7 +31,7 @@ async function sendEmail(subject: string, to: string, html: string, attachments?
             attachments
         })
         .then((info) => {
-            logging.info(NAMESPACE, `Finished sending email: ${JSON.stringify(info)}`);
+            logging.info(NAMESPACE, '', `Finished sending email: ${JSON.stringify(info)}`);
         });
 }
 

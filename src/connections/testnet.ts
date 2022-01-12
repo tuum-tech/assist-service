@@ -7,7 +7,7 @@ import LatestBlockchainStateSchema from '../schemas/latestBlockchainState';
 
 const NAMESPACE = 'Connections: Testnet';
 
-logging.info(NAMESPACE, `Connecting to mongodb testnet at ${config.mongo.testnet.url}`);
+logging.info(NAMESPACE, '', `Connecting to mongodb testnet at ${config.mongo.testnet.url}`);
 
 const conn = mongoose.createConnection(config.mongo.testnet.url, config.mongo.options);
 const connTestnet = {
