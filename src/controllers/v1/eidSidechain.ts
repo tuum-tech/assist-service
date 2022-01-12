@@ -10,7 +10,7 @@ import commonFunction from '../../functions/common';
 import accountFunction from '../../functions/account';
 import commonService from '../../services/v1/common';
 import rpcServiceEvm from '../../services/v1/evmRpc';
-import IUser from '../../interfaces/user';
+import IDidTx from '../../interfaces/didTx';
 
 const NAMESPACE = 'Controller: EID Sidechain';
 
@@ -35,25 +35,7 @@ const publishDIDTx = async (req: Request, res: Response, next: NextFunction) => 
     // TODO: Check if requestFrom DID is valid by resolving it
 
     const costInUsd = 0.001;
-    // Verify whether the given payload is valid by trying to create a transaction out of it and then proceed
-    // to the next step if valid
-    const userDetails = {
-        user: {} as IUser,
-        error: ''
-    };
-    await conn.User.findOne({ username: authTokenDecoded.username })
-        .exec()
-        .then((result: any) => {
-            userDetails.user = result;
-        })
-        .catch((err: any) => {
-            logging.error(NAMESPACE, did, 'Error while trying to find the user in the database: ', err.toString());
-            userDetails.error = err;
-        });
-
-    logging.info(NAMESPACE, did, JSON.stringify(authTokenDecoded), JSON.stringify(userDetails));
-
-    const result: any = await accountFunction
+    const result: any = accountFunction
         .handleAPIQuota(conn, authTokenDecoded, costInUsd)
         .then((account) => {
             if (account.error) {
@@ -61,14 +43,14 @@ const publishDIDTx = async (req: Request, res: Response, next: NextFunction) => 
                 return res.status(account.retCode).json(commonService.returnError(network, account.retCode, account.error));
             }
             let requestFrom = {};
-            if (userDetails.user.did) {
+            if (account.user.did) {
                 requestFrom = {
-                    username: userDetails.user.username,
-                    did: userDetails.user.did
+                    username: account.user.username,
+                    did: account.user.did
                 };
             } else {
                 requestFrom = {
-                    username: userDetails.user.username
+                    username: account.user.username
                 };
             }
             const didTx = new conn.DidTx({
@@ -90,11 +72,11 @@ const publishDIDTx = async (req: Request, res: Response, next: NextFunction) => 
 
                     if (Boolean(upgradeAccount) === true) {
                         if (network === config.blockchain.mainnet) {
-                            if (userDetails.user.accountType !== config.user.premiumAccountType) {
-                                userDetails.user.accountType = config.user.premiumAccountType;
-                                userDetails.user.requests.totalQuota = config.user.premiumAccountQuota;
-                                userDetails.user.balance = 0;
-                                userDetails.user.save();
+                            if (account.user.accountType !== config.user.premiumAccountType) {
+                                account.user.accountType = config.user.premiumAccountType;
+                                account.user.requests.totalQuota = config.user.premiumAccountQuota;
+                                account.user.did = did;
+                                account.user.balance = 0;
                             } else {
                                 const errMessage = 'This account is already upgraded to premium account. Nothing to do';
                                 logging.error(NAMESPACE, did, errMessage);
@@ -104,6 +86,7 @@ const publishDIDTx = async (req: Request, res: Response, next: NextFunction) => 
                             logging.error(NAMESPACE, did, errMessage);
                         }
                     }
+                    account.user.save();
                     return res.status(200).json(commonService.returnSuccess(network, 200, data, account.quota));
                 })
                 .catch((error: any) => {
@@ -113,7 +96,7 @@ const publishDIDTx = async (req: Request, res: Response, next: NextFunction) => 
                 });
         })
         .catch((error) => {
-            logging.error(NAMESPACE, did, 'Error while trying to verify account API quota', error);
+            logging.error(NAMESPACE, authTokenDecoded.username, 'Error while trying to verify account API quota', error);
 
             return res.status(500).json(commonService.returnError(network, 500, error));
         });
@@ -180,39 +163,30 @@ const getDIDTxFromConfirmationId = async (req: Request, res: Response, next: Nex
     const result: any = await conn.DidTx.findOne({ _id })
         .exec()
         .then((didTx: any) => {
-            logging.info(NAMESPACE, `didTx: ${didTx}`, didTx.did);
-            if (!didTx) {
-                const error: string = 'Could not find a DID transaction in the database';
-                logging.error(NAMESPACE, didTx.did, 'Error while trying to get a DID transaction from confirmationId', error);
-
-                return res.status(404).json(commonService.returnError(network, 404, error));
-            } else {
-                const data = {
-                    didTx
-                };
-                const costInUsd = 0.0001;
-                accountFunction
-                    .handleAPIQuota(conn, authTokenDecoded, costInUsd)
-                    .then((account) => {
-                        if (account.error) {
-                            logging.error(NAMESPACE, account.user.did, 'Error while trying to find the user in the database: ', account.error);
-                            return res.status(account.retCode).json(commonService.returnError(network, account.retCode, account.error));
-                        }
-                        account.user.save();
-                        return res.status(200).json(commonService.returnSuccess(network, 200, data, account.quota));
-                    })
-                    .catch((error) => {
-                        logging.error(NAMESPACE, didTx.did, 'Error while trying to verify account API quota', error);
-
-                        return res.status(500).json(commonService.returnError(network, 500, error));
-                    });
-            }
+            const costInUsd = 0.0001;
+            accountFunction
+                .handleAPIQuota(conn, authTokenDecoded, costInUsd)
+                .then((account) => {
+                    if (account.error) {
+                        logging.error(NAMESPACE, account.user.did, 'Error while trying to find the user in the database: ', account.error);
+                        return res.status(account.retCode).json(commonService.returnError(network, account.retCode, account.error));
+                    }
+                    account.user.save();
+                    const data = {
+                        didTx
+                    };
+                    return res.status(200).json(commonService.returnSuccess(network, 200, data, account.quota));
+                })
+                .catch((error) => {
+                    logging.error(NAMESPACE, didTx.did, 'Error while trying to verify account API quota', error);
+                    return res.status(500).json(commonService.returnError(network, 500, error));
+                });
         })
-        .catch((error: any) => {
-            logging.error(NAMESPACE, '', 'Error while trying to get a DID transaction from confirmationId: ', error);
-
-            return res.status(500).json(commonService.returnError(network, 500, error));
+        .catch((err: any) => {
+            logging.error(NAMESPACE, '', 'Error while trying to find did tx in the database: ', err.toString());
+            return res.status(500).json(commonService.returnError(network, 500, err.toString()));
         });
+
     return result;
 };
 
@@ -237,7 +211,7 @@ const getDIDTxStats = async (req: Request, res: Response, next: NextFunction) =>
     }
     endDate.setDate(endDate.getDate() + 1);
 
-    const result: any = await eidSidechainStats.getTxStats(network, beginDate, endDate).then((stats) => {
+    const result: any = eidSidechainStats.getTxStats(network, beginDate, endDate).then((stats) => {
         if (stats.error !== null) {
             logging.error(NAMESPACE, '', 'Error while trying to get DID tx stats: ', stats.error);
             return res.status(500).json(commonService.returnError(network, 500, stats.error));

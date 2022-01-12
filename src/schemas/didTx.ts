@@ -13,7 +13,8 @@ const DidTxSchema: Schema = new Schema(
         blockchainTxHash: { type: String },
         blockchainTxReceipt: { type: Object },
         extraInfo: { type: Object },
-        walletUsed: { type: String }
+        walletUsed: { type: String },
+        beingProcessed: { type: Boolean }
     },
     {
         timestamps: true

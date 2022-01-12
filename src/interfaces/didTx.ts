@@ -15,4 +15,5 @@ export default interface IDidTx extends Document {
     blockchainTxReceipt: object;
     extraInfo: object;
     walletUsed: string;
+    beingProcessed: boolean;
 }
