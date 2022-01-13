@@ -32,76 +32,57 @@ const publishDIDTx = async (req: Request, res: Response, next: NextFunction) => 
     }
     const conn = network === config.blockchain.testnet ? connTestnet : connMainnet;
 
-    // TODO: Check if requestFrom DID is valid by resolving it
-
     const costInUsd = 0.001;
-    const result: any = accountFunction
-        .handleAPIQuota(conn, authTokenDecoded, costInUsd)
-        .then((account) => {
-            if (account.error) {
-                logging.error(NAMESPACE, account.user.did, 'Error while trying to find the user in the database: ', account.error);
-                return res.status(account.retCode).json(commonService.returnError(network, account.retCode, account.error));
-            }
-            let requestFrom = {};
-            if (account.user.did) {
-                requestFrom = {
-                    username: account.user.username,
-                    did: account.user.did
-                };
+    const account = await accountFunction.handleAPIQuota(conn, authTokenDecoded, costInUsd);
+    if (account.error) {
+        logging.error(NAMESPACE, account.user.did, 'Error while trying to find the user in the database: ', account.error);
+        return res.status(account.retCode).json(commonService.returnError(network, account.retCode, account.error));
+    }
+    let requestFrom = {};
+    if (account.user.did) {
+        requestFrom = {
+            username: account.user.username,
+            did: account.user.did
+        };
+    } else {
+        requestFrom = {
+            username: account.user.username
+        };
+    }
+
+    const didTx = await new conn.DidTx({
+        _id: new mongoose.Types.ObjectId(),
+        did,
+        requestFrom,
+        didRequest,
+        memo,
+        status: config.txStatus.pending
+    }).save();
+
+    const result = JSON.parse(JSON.stringify(didTx));
+    result.confirmationId = result._id;
+    const data = {
+        didTx: result
+    };
+
+    if (Boolean(upgradeAccount) === true) {
+        if (network === config.blockchain.mainnet) {
+            if (account.user.accountType !== config.user.premiumAccountType) {
+                account.user.accountType = config.user.premiumAccountType;
+                account.user.requests.totalQuota = config.user.premiumAccountQuota;
+                account.user.did = did;
+                account.user.balance = 0;
             } else {
-                requestFrom = {
-                    username: account.user.username
-                };
+                const errMessage = 'This account is already upgraded to premium account. Nothing to do';
+                logging.error(NAMESPACE, did, errMessage);
             }
-            const didTx = new conn.DidTx({
-                _id: new mongoose.Types.ObjectId(),
-                did,
-                requestFrom,
-                didRequest,
-                memo,
-                status: config.txStatus.pending
-            });
-            didTx
-                .save()
-                .then((r: any) => {
-                    const _result = JSON.parse(JSON.stringify(r));
-                    _result.confirmationId = _result._id;
-                    const data = {
-                        didTx: _result
-                    };
-
-                    if (Boolean(upgradeAccount) === true) {
-                        if (network === config.blockchain.mainnet) {
-                            if (account.user.accountType !== config.user.premiumAccountType) {
-                                account.user.accountType = config.user.premiumAccountType;
-                                account.user.requests.totalQuota = config.user.premiumAccountQuota;
-                                account.user.did = did;
-                                account.user.balance = 0;
-                            } else {
-                                const errMessage = 'This account is already upgraded to premium account. Nothing to do';
-                                logging.error(NAMESPACE, did, errMessage);
-                            }
-                        } else {
-                            const errMessage = 'The upgrade to premium feature is not available on the testnet';
-                            logging.error(NAMESPACE, did, errMessage);
-                        }
-                    }
-                    account.user.save();
-                    return res.status(200).json(commonService.returnSuccess(network, 200, data, account.quota));
-                })
-                .catch((error: any) => {
-                    logging.error(NAMESPACE, did, 'Error while trying to save the DID tx to the database: ', error);
-
-                    return res.status(500).json(commonService.returnError(network, 500, error));
-                });
-        })
-        .catch((error) => {
-            logging.error(NAMESPACE, authTokenDecoded.username, 'Error while trying to verify account API quota', error);
-
-            return res.status(500).json(commonService.returnError(network, 500, error));
-        });
-
-    return result;
+        } else {
+            const errMessage = 'The upgrade to premium feature is not available on the testnet';
+            logging.error(NAMESPACE, did, errMessage);
+        }
+    }
+    await account.user.save();
+    return res.status(200).json(commonService.returnSuccess(network, 200, data, account.quota));
 };
 
 const getAllDIDTxes = async (req: Request, res: Response, next: NextFunction) => {
@@ -111,6 +92,13 @@ const getAllDIDTxes = async (req: Request, res: Response, next: NextFunction) =>
     if (!config.blockchain.validNetworks.includes(network)) network = config.blockchain.mainnet;
 
     const conn = network === config.blockchain.testnet ? connTestnet : connMainnet;
+
+    const costInUsd = 0.1;
+    const account = await accountFunction.handleAPIQuota(conn, authTokenDecoded, costInUsd);
+    if (account.error) {
+        logging.error(NAMESPACE, account.user.did, 'Error while trying to find the user in the database: ', account.error);
+        return res.status(account.retCode).json(commonService.returnError(network, account.retCode, account.error));
+    }
 
     const result: any = await conn.DidTx.find()
         .exec()
@@ -125,22 +113,8 @@ const getAllDIDTxes = async (req: Request, res: Response, next: NextFunction) =>
                     didTxes: results,
                     count: results.length
                 };
-                const costInUsd = 0.1;
-                accountFunction
-                    .handleAPIQuota(conn, authTokenDecoded, costInUsd)
-                    .then((account) => {
-                        if (account.error) {
-                            logging.error(NAMESPACE, account.user.did, 'Error while trying to find the user in the database: ', account.error);
-                            return res.status(account.retCode).json(commonService.returnError(network, account.retCode, account.error));
-                        }
-                        account.user.save();
-                        return res.status(200).json(commonService.returnSuccess(network, 200, data, account.quota));
-                    })
-                    .catch((error) => {
-                        logging.error(NAMESPACE, '', 'Error while trying to verify account API quota', error);
-
-                        return res.status(500).json(commonService.returnError(network, 500, error));
-                    });
+                account.user.save();
+                return res.status(200).json(commonService.returnSuccess(network, 200, data, account.quota));
             }
         })
         .catch((error: any) => {
@@ -160,34 +134,19 @@ const getDIDTxFromConfirmationId = async (req: Request, res: Response, next: Nex
 
     const conn = network === config.blockchain.testnet ? connTestnet : connMainnet;
 
-    const result: any = await conn.DidTx.findOne({ _id })
-        .exec()
-        .then((didTx: any) => {
-            const costInUsd = 0.0001;
-            accountFunction
-                .handleAPIQuota(conn, authTokenDecoded, costInUsd)
-                .then((account) => {
-                    if (account.error) {
-                        logging.error(NAMESPACE, account.user.did, 'Error while trying to find the user in the database: ', account.error);
-                        return res.status(account.retCode).json(commonService.returnError(network, account.retCode, account.error));
-                    }
-                    account.user.save();
-                    const data = {
-                        didTx
-                    };
-                    return res.status(200).json(commonService.returnSuccess(network, 200, data, account.quota));
-                })
-                .catch((error) => {
-                    logging.error(NAMESPACE, didTx.did, 'Error while trying to verify account API quota', error);
-                    return res.status(500).json(commonService.returnError(network, 500, error));
-                });
-        })
-        .catch((err: any) => {
-            logging.error(NAMESPACE, '', 'Error while trying to find did tx in the database: ', err.toString());
-            return res.status(500).json(commonService.returnError(network, 500, err.toString()));
-        });
+    const costInUsd = 0.0001;
+    const account = await accountFunction.handleAPIQuota(conn, authTokenDecoded, costInUsd);
+    if (account.error) {
+        logging.error(NAMESPACE, account.user.did, 'Error while trying to find the user in the database: ', account.error);
+        return res.status(account.retCode).json(commonService.returnError(network, account.retCode, account.error));
+    }
 
-    return result;
+    const didTx = await conn.DidTx.findOne({ _id }).exec();
+    await account.user.save();
+    const data = {
+        didTx
+    };
+    return res.status(200).json(commonService.returnSuccess(network, 200, data, account.quota));
 };
 
 const getDIDTxStats = async (req: Request, res: Response, next: NextFunction) => {
@@ -210,6 +169,13 @@ const getDIDTxStats = async (req: Request, res: Response, next: NextFunction) =>
         beginDate = null;
     }
     endDate.setDate(endDate.getDate() + 1);
+
+    const costInUsd = 0.0001;
+    const account = await accountFunction.handleAPIQuota(conn, authTokenDecoded, costInUsd);
+    if (account.error) {
+        logging.error(NAMESPACE, account.user.did, 'Error while trying to find the user in the database: ', account.error);
+        return res.status(account.retCode).json(commonService.returnError(network, account.retCode, account.error));
+    }
 
     const result: any = eidSidechainStats.getTxStats(network, beginDate, endDate).then((stats) => {
         if (stats.error !== null) {

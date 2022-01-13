@@ -1,16 +1,61 @@
 {
-  "editor.defaultFormatter": "esbenp.prettier-vscode",
-  "[javascript]": {
-    "editor.defaultFormatter": "esbenp.prettier-vscode"
-  },
-  "[typescript]": {
-    "editor.formatOnSave": true,
-    "editor.formatOnPaste": true
-  },
-  "[markdown]": {
-    "editor.formatOnSave": true,
+    "editor.fontSize": 12,
+    "window.zoomLevel": 1,
+    "files.autoSave": "off",
+    "editor.tabSize": 2,
     "editor.wordWrap": "on",
-    "editor.renderWhitespace": "all",
-    "editor.acceptSuggestionOnEnter": "off"
-  }
+    "editor.formatOnPaste": true,
+    "editor.formatOnSave": true,
+    "terminal.integrated.fontSize": 9,
+    "emmet.includeLanguages": {
+        "javascript": "javascriptreact"
+    },
+    "highlight-matching-tag.styles": {
+        "opening": {
+            "left": {
+                "custom": {
+                    "borderWidth": "0 0 0 3px",
+                    "borderStyle": "solid",
+                    "borderColor": "yellow",
+                    "borderRadius": "5px",
+                    "overviewRulerColor": "white"
+                }
+            },
+            "right": {
+                "custom": {
+                    "borderWidth": "0 3px 0 0",
+                    "borderStyle": "solid",
+                    "borderColor": "yellow",
+                    "borderRadius": "5px",
+                    "overviewRulerColor": "white"
+                }
+            }
+        }
+    },
+    "editor.minimap.enabled": false,
+    "prettier.jsxSingleQuote": true,
+    "prettier.semi": false,
+    "prettier.singleQuote": true,
+    "liveServer.settings.port": 0,
+    "indentRainbow.includedLanguages": [],
+    "editor.suggestSelection": "first",
+    "vsintellicode.modify.editor.suggestSelection": "automaticallyOverrodeDefaultValue",
+    "auto-rename-tag.activationOnLanguage": ["*"],
+    "bracketPairColorizer.activeScopeCSS": ["borderStyle : solid", "borderWidth : 1px", "borderColor : {color}; opacity: 0.5"],
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "liveServer.settings.AdvanceCustomBrowserCmdLine": "",
+    "explorer.confirmDelete": false,
+    "javascript.updateImportsOnFileMove.enabled": "always",
+    "typescript.updateImportsOnFileMove.enabled": "always",
+    "workbench.editorAssociations": {
+        "*.ipynb": "jupyter-notebook"
+    },
+    "security.workspace.trust.untrustedFiles": "open",
+    "notebook.cellToolbarLocation": {
+        "default": "right",
+        "jupyter-notebook": "left"
+    },
+    "explorer.confirmDragAndDrop": false,
+    "files.saveConflictResolution": "overwriteFileOnDisk",
+    "bracket-pair-colorizer-2.depreciation-notice": false
 }

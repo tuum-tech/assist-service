@@ -85,14 +85,14 @@ app.use((err: Error, req: any, res: any, next: any) => {
 app.listen(config.server.port, () => {
     logging.info(NAMESPACE, '', `Assist Service is running on ${config.server.hostname}:${config.server.port}`);
 
-     cronEIDSidechain.dailyCronjob(config.blockchain.mainnet);
+    cronEIDSidechain.dailyCronjob(config.blockchain.mainnet);
     cronEIDSidechain.dailyCronjob(config.blockchain.testnet);
 
-    cronEIDSidechain.setLatestBlockInfo(config.blockchain.mainnet); 
+    cronEIDSidechain.setLatestBlockInfo(config.blockchain.mainnet);
     cronEIDSidechain.publishDIDTxPending(config.blockchain.mainnet);
     cronEIDSidechain.publishDIDTxProcessing(config.blockchain.mainnet);
 
-     cronEIDSidechain.setLatestBlockInfo(config.blockchain.testnet);
+    cronEIDSidechain.setLatestBlockInfo(config.blockchain.testnet);
     cronEIDSidechain.publishDIDTxPending(config.blockchain.testnet);
     cronEIDSidechain.publishDIDTxProcessing(config.blockchain.testnet);
 
@@ -100,5 +100,5 @@ app.listen(config.server.port, () => {
     cronESCSidechain.setLatestBlockInfo(config.blockchain.testnet);
 
     cronELAMainchain.setLatestBlockInfo(config.blockchain.mainnet);
-    cronELAMainchain.setLatestBlockInfo(config.blockchain.testnet); 
+    cronELAMainchain.setLatestBlockInfo(config.blockchain.testnet);
 });

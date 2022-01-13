@@ -14,247 +14,164 @@ import Web3 from 'web3';
 const NAMESPACE = 'Cron: EID Sidechain';
 
 async function setLatestBlockInfo(network: string) {
-    // * * * * * * format = second minute hour dayofmonth month dayofweek
-    cron.schedule(
-        '*/10 * * * * *',
-        async () => {
-            logging.info(NAMESPACE, '', `Started cronjob: setLatestBlockInfo: ${network}`);
+    logging.info(NAMESPACE, '', `Started cronjob: setLatestBlockInfo: ${network}`);
 
-            const rpcUrl = network === config.blockchain.testnet ? config.blockchain.eidSidechain.testnet.rpcUrl : config.blockchain.eidSidechain.mainnet.rpcUrl;
-            const backupRpcUrl = network === config.blockchain.testnet ? config.blockchain.eidSidechain.testnet.backupRpcUrl : config.blockchain.eidSidechain.mainnet.backupRpcUrl;
-            const chainId = network === config.blockchain.testnet ? config.blockchain.eidSidechain.testnet.chainId : config.blockchain.eidSidechain.mainnet.chainId;
-            const genesisBlockHash = network === config.blockchain.testnet ? config.blockchain.eidSidechain.testnet.genesisBlockHash : config.blockchain.eidSidechain.mainnet.genesisBlockHash;
-            const depositAddress = network === config.blockchain.testnet ? config.blockchain.eidSidechain.testnet.depositAddress : config.blockchain.eidSidechain.mainnet.depositAddress;
-            const withdrawContractAddress =
-                network === config.blockchain.testnet ? config.blockchain.eidSidechain.testnet.withdrawContractAddress : config.blockchain.eidSidechain.mainnet.withdrawContractAddress;
-            const didContractAddress = network === config.blockchain.testnet ? config.blockchain.eidSidechain.testnet.didContractAddress : config.blockchain.eidSidechain.mainnet.didContractAddress;
+    try {
+        const rpcUrl = network === config.blockchain.testnet ? config.blockchain.eidSidechain.testnet.rpcUrl : config.blockchain.eidSidechain.mainnet.rpcUrl;
+        const backupRpcUrl = network === config.blockchain.testnet ? config.blockchain.eidSidechain.testnet.backupRpcUrl : config.blockchain.eidSidechain.mainnet.backupRpcUrl;
+        const chainId = network === config.blockchain.testnet ? config.blockchain.eidSidechain.testnet.chainId : config.blockchain.eidSidechain.mainnet.chainId;
+        const genesisBlockHash = network === config.blockchain.testnet ? config.blockchain.eidSidechain.testnet.genesisBlockHash : config.blockchain.eidSidechain.mainnet.genesisBlockHash;
+        const depositAddress = network === config.blockchain.testnet ? config.blockchain.eidSidechain.testnet.depositAddress : config.blockchain.eidSidechain.mainnet.depositAddress;
+        const withdrawContractAddress =
+            network === config.blockchain.testnet ? config.blockchain.eidSidechain.testnet.withdrawContractAddress : config.blockchain.eidSidechain.mainnet.withdrawContractAddress;
+        const didContractAddress = network === config.blockchain.testnet ? config.blockchain.eidSidechain.testnet.didContractAddress : config.blockchain.eidSidechain.mainnet.didContractAddress;
 
-            const web3 = new Web3(rpcUrl);
+        const web3 = new Web3(rpcUrl);
 
-            const conn = network === config.blockchain.testnet ? connTestnet : connMainnet;
-            const isTestnet = network === config.blockchain.testnet ? true : false;
+        const conn = network === config.blockchain.testnet ? connTestnet : connMainnet;
+        const isTestnet = network === config.blockchain.testnet ? true : false;
 
-            setTimeout(() => {
-                rpcServiceEvm
-                    .getBlockHeight(config.blockchain.chainEid, isTestnet)
-                    .then((heightResponse) => {
-                        const currentHeight: number = heightResponse.data.height - 1;
-                        return currentHeight;
-                    })
-                    .then((height) => {
-                        conn.LatestBlockchainState.findOne({ chain: config.blockchain.eidSidechain.name })
-                            .exec()
-                            .then((state: any) => {
-                                const latestState =
-                                    state ||
-                                    new conn.LatestBlockchainState({
-                                        _id: new mongoose.Types.ObjectId(),
-                                        chain: config.blockchain.eidSidechain.name,
-                                        network
-                                    });
-                                web3.eth
-                                    .getBlock(height)
-                                    .then((block: any) => {
-                                        return block;
-                                    })
-                                    .then((block: any) => {
-                                        latestState.height = height;
-                                        latestState.block = block;
-                                        latestState.miner = 'TBD';
-                                        latestState.validator = {
-                                            name: 'TBD',
-                                            rank: Infinity,
-                                            ownerKey: 'TBD',
-                                            nodeKey: 'TBD',
-                                            location: 'TBD',
-                                            url: 'TBD',
-                                            ip: 'TBD'
-                                        };
-                                        latestState.avgTxHourly = Infinity;
-                                        latestState.accountsOverOneELA = Infinity;
-                                        latestState.numTx = block.transactions.length;
-                                        latestState.extraInfo = {
-                                            rpcUrl,
-                                            backupRpcUrl,
-                                            chainId,
-                                            genesisBlockHash,
-                                            depositAddress,
-                                            withdrawContractAddress,
-                                            didContractAddress
-                                        };
-                                        latestState.save();
-                                    })
-                                    .catch((err: any) => {
-                                        logging.error(NAMESPACE, '', 'Error while getting the latest block from the blockchain: ', err);
-                                        return false;
-                                    });
-                            })
-                            .catch((err: any) => {
-                                logging.error(NAMESPACE, 'Error while trying to retrieve latest state of the blockchain from the database: ', err);
-                            });
-                    })
-                    .catch((err: any) => {
-                        logging.error(NAMESPACE, '', 'Error while trying to run the cronjob to get latest block details: ', err.toString());
-                    });
-            }, 8000);
+        const height = await rpcServiceEvm.getBlockHeight(config.blockchain.chainEid, isTestnet).then((heightResponse) => {
+            const currentHeight: number = heightResponse.data.height - 1;
+            return currentHeight;
+        });
 
-            logging.info(NAMESPACE, '', `Completed cronjob: setLatestBlockInfo: ${network}`);
-        },
-        { timezone: 'Etc/UTC' }
-    );
+        const state = await conn.LatestBlockchainState.findOne({ chain: config.blockchain.eidSidechain.name }).exec();
+        const latestState =
+            state ||
+            new conn.LatestBlockchainState({
+                _id: new mongoose.Types.ObjectId(),
+                chain: config.blockchain.eidSidechain.name,
+                network
+            });
+        const block = await web3.eth.getBlock(height);
+        latestState.height = height;
+        latestState.block = block;
+        latestState.miner = 'TBD';
+        latestState.validator = {
+            name: 'TBD',
+            rank: Infinity,
+            ownerKey: 'TBD',
+            nodeKey: 'TBD',
+            location: 'TBD',
+            url: 'TBD',
+            ip: 'TBD'
+        };
+        latestState.avgTxHourly = Infinity;
+        latestState.accountsOverOneELA = Infinity;
+        latestState.numTx = block.transactions.length;
+        latestState.extraInfo = {
+            rpcUrl,
+            backupRpcUrl,
+            chainId,
+            genesisBlockHash,
+            depositAddress,
+            withdrawContractAddress,
+            didContractAddress
+        };
+        await latestState.save();
+    } catch (err: any) {
+        logging.info(NAMESPACE, '', `Error while running cronjob: setLatestBlockInfo: ${network}: ${err.toString()}`);
+    }
+    logging.info(NAMESPACE, '', `Completed cronjob: setLatestBlockInfo: ${network}`);
+
+    setTimeout(() => {
+        setLatestBlockInfo(network);
+    }, 10000);
 }
 
 async function publishDIDTxPending(network: string) {
-    // * * * * * * format = second minute hour dayofmonth month dayofweek
-    cron.schedule(
-        '*/5 * * * * *',
-        async () => {
-            logging.info(NAMESPACE, '', `Started cronjob: publishDIDTxPending: ${network}`);
+    logging.info(NAMESPACE, '', `Started cronjob: publishDIDTxPending: ${network}`);
 
-            const rpcUrl = network === config.blockchain.testnet ? config.blockchain.eidSidechain.testnet.rpcUrl : config.blockchain.eidSidechain.mainnet.rpcUrl;
+    try {
+        const rpcUrl = network === config.blockchain.testnet ? config.blockchain.eidSidechain.testnet.rpcUrl : config.blockchain.eidSidechain.mainnet.rpcUrl;
 
-            const web3 = new Web3(rpcUrl);
+        const web3 = new Web3(rpcUrl);
 
-            const conn = network === config.blockchain.testnet ? connTestnet : connMainnet;
+        const conn = network === config.blockchain.testnet ? connTestnet : connMainnet;
 
-            const didTxesDetails = {
-                didTxes: [],
-                error: ''
-            };
-            await conn.DidTx.find({ status: config.txStatus.pending })
-                .exec()
-                .then((results: any) => {
-                    didTxesDetails.didTxes = results;
-                })
-                .catch((err: any) => {
-                    logging.error(NAMESPACE, '', 'Error while trying to find did txes in the database: ', err.toString());
-                    didTxesDetails.error = err;
-                });
-            if (didTxesDetails.error) {
-                logging.error(NAMESPACE, '', 'Error while publishing the Pending DID transactions to the blockchain: ', didTxesDetails.error);
-                logging.info(NAMESPACE, '', `Completed cronjob: publishDIDTxPending: ${network}`);
+        const didTxes = await conn.DidTx.find({ status: config.txStatus.pending }).exec();
+        const wallet = config.blockchain.eidSidechain.wallets.keystores[Math.floor(Math.random() * config.blockchain.eidSidechain.wallets.keystores.length)];
+        didTxes.map(async (didTx: any, index: any) => {
+            if (didTx.walletUsed) {
+                logging.info(NAMESPACE, '', `${didTx.did} is already being published`);
                 return;
             }
-            const wallet = config.blockchain.eidSidechain.wallets.keystores[Math.floor(Math.random() * config.blockchain.eidSidechain.wallets.keystores.length)];
-            didTxesDetails.didTxes.map(async (didTx: any, index: any) => {
-                if (didTx.walletUsed) {
-                    logging.info(NAMESPACE, '', `${didTx.did} is already being published`);
-                    return;
-                }
-                logging.info(NAMESPACE, '', `Using wallet ${wallet.address} to publish ${didTx.did}`);
+            logging.info(NAMESPACE, '', `Using wallet ${wallet.address} to publish ${didTx.did}`);
 
-                didTx.walletUsed = wallet.address;
-                didTx.save();
+            didTx.walletUsed = wallet.address;
+            await didTx.save();
 
-                rpcServiceEid
-                    .signTx(network, wallet, JSON.stringify(didTx.didRequest), index)
-                    .then((res) => {
-                        if (res.error) {
-                            logging.error(NAMESPACE, '', 'Error while publishing the a pending DID transaction to the blockchain: ', res.error);
+            const res = await rpcServiceEid.signTx(network, wallet, JSON.stringify(didTx.didRequest), index);
+            if (res.error) {
+                logging.error(NAMESPACE, '', 'Error while publishing the a pending DID transaction to the blockchain: ', res.error);
 
-                            didTx.status = config.txStatus.cancelled;
-                            didTx.extraInfo = {
-                                error: res.error
-                            };
-                            didTx.save();
-                        } else {
-                            setTimeout(() => {
-                                web3.eth.sendSignedTransaction(res.txDetails.rawTx).on('transactionHash', (transactionHash: string) => {
-                                    logging.info(NAMESPACE, '', `Pending tx ${res.txDetails.rawTx} has now been sent`);
+                didTx.status = config.txStatus.cancelled;
+                didTx.extraInfo = {
+                    error: res.error
+                };
+                await didTx.save();
+            } else {
+                await web3.eth.sendSignedTransaction(res.txDetails.rawTx).on('transactionHash', async (transactionHash: string) => {
+                    logging.info(NAMESPACE, '', `Pending tx ${res.txDetails.rawTx} has now been sent`);
 
-                                    didTx.status = config.txStatus.processing;
-                                    didTx.blockchainTxHash = transactionHash;
-                                    didTx.save();
-                                });
-                            }, 30000);
-                        }
-                    })
-                    .catch((error: any) => {
-                        logging.error(NAMESPACE, 'Error while publishing the a pending DID transaction to the blockchain: ', error);
+                    didTx.status = config.txStatus.processing;
+                    didTx.blockchainTxHash = transactionHash;
+                    await didTx.save();
+                });
+            }
+        });
+    } catch (err: any) {
+        logging.info(NAMESPACE, '', `Error while running cronjob: publishDIDTxPending: ${network}: ${err.toString()}`);
+    }
+    logging.info(NAMESPACE, '', `Completed cronjob: publishDIDTxPending: ${network}`);
 
-                        didTx.status = config.txStatus.cancelled;
-                        didTx.extraInfo = {
-                            error: error.toString()
-                        };
-                        didTx.save();
-                    });
-            });
-            logging.info(NAMESPACE, '', `Completed cronjob: publishDIDTxPending: ${network}`);
-        },
-        { timezone: 'Etc/UTC' }
-    );
+    setTimeout(() => {
+        publishDIDTxPending(network);
+    }, 5000);
 }
 
 async function publishDIDTxProcessing(network: string) {
-    // * * * * * * format = second minute hour dayofmonth month dayofweek
-    cron.schedule(
-        '*/5 * * * * *',
-        async () => {
-            logging.info(NAMESPACE, '', `Started cronjob: publishDIDTxProcessing: ${network}`);
+    logging.info(NAMESPACE, '', `Started cronjob: publishDIDTxProcessing: ${network}`);
 
-            const rpcUrl = network === config.blockchain.testnet ? config.blockchain.eidSidechain.testnet.rpcUrl : config.blockchain.eidSidechain.mainnet.rpcUrl;
+    try {
+        const rpcUrl = network === config.blockchain.testnet ? config.blockchain.eidSidechain.testnet.rpcUrl : config.blockchain.eidSidechain.mainnet.rpcUrl;
 
-            const web3 = new Web3(rpcUrl);
+        const web3 = new Web3(rpcUrl);
 
-            const conn = network === config.blockchain.testnet ? connTestnet : connMainnet;
+        const conn = network === config.blockchain.testnet ? connTestnet : connMainnet;
 
-            const didTxesDetails = {
-                didTxes: [],
-                error: ''
-            };
-            await conn.DidTx.find({ status: config.txStatus.processing })
-                .exec()
-                .then((results: any) => {
-                    didTxesDetails.didTxes = results;
-                })
-                .catch((err: any) => {
-                    logging.error(NAMESPACE, '', 'Error while trying to find did txes in the database: ', err.toString());
-                    didTxesDetails.error = err;
-                });
-            if (didTxesDetails.error) {
-                logging.error(NAMESPACE, '', 'Error while trying to process Processing DID transactions from the database: ', didTxesDetails.error);
-                logging.info(NAMESPACE, '', `Completed cronjob: publishDIDTxProcessing: ${network}`);
-                return;
-            }
-
-            didTxesDetails.didTxes.map((didTx: any) => {
-                if (didTx.beingProcessed) {
-                    logging.info(NAMESPACE, '', `${didTx.did} is already being processed...`);
-                    return;
+        const didTxes = await conn.DidTx.find({ status: config.txStatus.processing }).exec();
+        didTxes.map(async (didTx: any) => {
+            await web3.eth.getTransactionReceipt(didTx.blockchainTxHash, async (err, txReceipt) => {
+                logging.info(NAMESPACE, didTx.did, `${didTx.did}: ${txReceipt}`);
+                if (!txReceipt) {
+                    didTx.extraInfo = {
+                        error: err
+                    };
+                } else {
+                    didTx.blockchainTxReceipt = txReceipt;
+                    if (txReceipt.status) {
+                        didTx.status = config.txStatus.completed;
+                    } else {
+                        didTx.status = config.txStatus.cancelled;
+                        didTx.extraInfo = {
+                            error: err
+                        };
+                        logging.error(NAMESPACE, didTx.did, 'Error while trying to publish DID transaction so changed its status to cancelled');
+                    }
                 }
-
-                didTx.beingProcessed = true;
-                didTx.save();
-
-                setTimeout(() => {
-                    web3.eth.getTransactionReceipt(didTx.blockchainTxHash, (err, txReceipt) => {
-                        logging.info(NAMESPACE, didTx.did, `${didTx.did}: ${txReceipt}`);
-                        if (!txReceipt) {
-                            didTx.extraInfo = {
-                                error: err
-                            };
-                            didTx.save();
-                            return;
-                        }
-                        didTx.blockchainTxReceipt = txReceipt;
-                        if (txReceipt.status) {
-                            didTx.status = config.txStatus.completed;
-                        } else {
-                            didTx.status = config.txStatus.cancelled;
-                            didTx.extraInfo = {
-                                error: err
-                            };
-                            logging.error(NAMESPACE, didTx.did, 'Error while trying to publish DID transaction so changed its status to cancelled');
-                        }
-                        didTx.save();
-                    });
-                }, 30000);
+                await didTx.save();
             });
+        });
+    } catch (err: any) {
+        logging.info(NAMESPACE, '', `Error while running cronjob: publishDIDTxProcessing: ${network}: ${err.toString()}`);
+    }
+    logging.info(NAMESPACE, '', `Completed cronjob: publishDIDTxProcessing: ${network}`);
 
-            logging.info(NAMESPACE, '', `Completed cronjob: publishDIDTxProcessing: ${network}`);
-        },
-        { timezone: 'Etc/UTC' }
-    );
+    setTimeout(() => {
+        publishDIDTxProcessing(network);
+    }, 5000);
 }
 
 async function dailyCronjob(network: string) {
