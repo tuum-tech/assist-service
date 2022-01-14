@@ -16,34 +16,24 @@ const getBlockInfoLatest = async (req: Request, res: Response, next: NextFunctio
     let network = req.query.network ? req.query.network.toString() : config.blockchain.mainnet;
     if (!config.blockchain.validNetworks.includes(network)) network = config.blockchain.mainnet;
 
-    const conn = network === config.blockchain.testnet ? connTestnet : connMainnet;
+    try {
+        const conn = network === config.blockchain.testnet ? connTestnet : connMainnet;
 
-    const result: any = await conn.LatestBlockchainState.findOne({ chain: config.blockchain.elaMainchain.name })
-        .exec()
-        .then((data: any) => {
-            const costInUsd = 0.001;
-            accountFunction
-                .handleAPIQuota(conn, authTokenDecoded, costInUsd)
-                .then((account) => {
-                    if (account.error) {
-                        logging.error(NAMESPACE, account.user.did, 'Error while trying to find the user in the database: ', account.error);
-                        return res.status(account.retCode).json(commonService.returnError(network, account.retCode, account.error));
-                    }
-                    account.user.save();
-                    return res.status(200).json(commonService.returnSuccess(network, 200, data, account.quota));
-                })
-                .catch((error) => {
-                    logging.error(NAMESPACE, '', 'Error while trying to verify account API quota', error);
-
-                    return res.status(500).json(commonService.returnError(network, 500, error));
-                });
-        })
-        .catch((error: any) => {
-            logging.error(NAMESPACE, '', 'Error while trying to get the latest block info: ', error);
-
-            return res.status(500).json(commonService.returnError(network, 500, error));
-        });
-    return result;
+        const costInUsd = 0.001;
+        const [account, data] = await Promise.all([
+            accountFunction.handleAPIQuota(conn, authTokenDecoded, costInUsd),
+            conn.LatestBlockchainState.findOne({ chain: config.blockchain.elaMainchain.name })
+        ]);
+        if (account.error) {
+            logging.error(NAMESPACE, account.user.did, 'Error while trying to find the user in the database: ', account.error);
+            return res.status(account.retCode).json(commonService.returnError(network, account.retCode, account.error));
+        }
+        account.user.save();
+        return res.status(200).json(commonService.returnSuccess(network, 200, data, account.quota));
+    } catch (error) {
+        logging.error(NAMESPACE, '', 'Error while trying to get info from the latest block: ', error);
+        return res.status(500).json(commonService.returnError(network, 500, error));
+    }
 };
 
 const getSupplyEla = async (req: Request, res: Response, next: NextFunction) => {
@@ -55,38 +45,34 @@ const getSupplyEla = async (req: Request, res: Response, next: NextFunction) => 
 
     const network = config.blockchain.mainnet;
 
-    const conn = connMainnet;
+    try {
+        const conn = connMainnet;
 
-    const result: any = await conn.LatestBlockchainState.findOne({ chain: config.blockchain.elaMainchain.name })
-        .exec()
-        .then(async (data: any) => {
-            const currentHeight = data.height;
-            const minedEla = 5.02283105 * currentHeight;
-            const burnedEla = await rpcService.getBalance(network, 'ELANULLXXXXXXXXXXXXXXXXXXXXXYvs3rr');
+        const data = await conn.LatestBlockchainState.findOne({ chain: config.blockchain.elaMainchain.name });
 
-            let elaAmount = 28220000;
-            const totalSupply = 33000000 + minedEla - burnedEla.data.value;
+        const currentHeight = data.height;
+        const minedEla = 5.02283105 * currentHeight;
+        const burnedEla = await rpcService.getBalance(network, 'ELANULLXXXXXXXXXXXXXXXXXXXXXYvs3rr');
 
-            if (q === 'total') {
-                elaAmount = totalSupply;
-            } else if (q === 'circulating') {
-                const crAssetsAddress = await rpcService.getBalance(network, 'CRASSETSXXXXXXXXXXXXXXXXXXXX2qDX5J');
-                const crExpensesAddress = await rpcService.getBalance(network, 'CREXPENSESXXXXXXXXXXXXXXXXXX4UdT6b');
-                const efAddress = await rpcService.getBalance(network, '8S7jTjYjqBhJpS9DxaZEbBLfAhvvyGypKx');
-                const efOperationsAddress = await rpcService.getBalance(network, '8ZZLWQUDSbjWUn8sEdxEFJsZiRFpzg53rJ');
-                const crGenesisAddress = await rpcService.getBalance(network, '8KNrJAyF4M67HT5tma7ZE4Rx9N9YzaUbtM');
-                elaAmount = totalSupply - crAssetsAddress.data.value - crExpensesAddress.data.value - efAddress.data.value - efOperationsAddress.data.value - crGenesisAddress.data.value;
-            }
+        let elaAmount = 28220000;
+        const totalSupply = 33000000 + minedEla - burnedEla.data.value;
 
-            return res.status(200).json(elaAmount);
-        })
-        .catch((error: any) => {
-            logging.error(NAMESPACE, '', `Error while trying to get supply of ELA: `, error);
+        if (q === 'total') {
+            elaAmount = totalSupply;
+        } else if (q === 'circulating') {
+            const crAssetsAddress = await rpcService.getBalance(network, 'CRASSETSXXXXXXXXXXXXXXXXXXXX2qDX5J');
+            const crExpensesAddress = await rpcService.getBalance(network, 'CREXPENSESXXXXXXXXXXXXXXXXXX4UdT6b');
+            const efAddress = await rpcService.getBalance(network, '8S7jTjYjqBhJpS9DxaZEbBLfAhvvyGypKx');
+            const efOperationsAddress = await rpcService.getBalance(network, '8ZZLWQUDSbjWUn8sEdxEFJsZiRFpzg53rJ');
+            const crGenesisAddress = await rpcService.getBalance(network, '8KNrJAyF4M67HT5tma7ZE4Rx9N9YzaUbtM');
+            elaAmount = totalSupply - crAssetsAddress.data.value - crExpensesAddress.data.value - efAddress.data.value - efOperationsAddress.data.value - crGenesisAddress.data.value;
+        }
 
-            return res.status(500).json(commonService.returnError(network, 500, error));
-        });
-
-    return result;
+        return res.status(200).json(elaAmount);
+    } catch (error) {
+        logging.error(NAMESPACE, '', 'Error while trying to get supply of ELA: ', error);
+        return res.status(500).json(commonService.returnError(network, 500, error));
+    }
 };
 
 export default {

@@ -16,34 +16,24 @@ const getBlockInfoLatest = async (req: Request, res: Response, next: NextFunctio
     let network = req.query.network ? req.query.network.toString() : config.blockchain.mainnet;
     if (!config.blockchain.validNetworks.includes(network)) network = config.blockchain.mainnet;
 
-    const conn = network === config.blockchain.testnet ? connTestnet : connMainnet;
+    try {
+        const conn = network === config.blockchain.testnet ? connTestnet : connMainnet;
 
-    const result: any = await conn.LatestBlockchainState.findOne({ chain: config.blockchain.escSidechain.name })
-        .exec()
-        .then((data: any) => {
-            const costInUsd = 0.001;
-            accountFunction
-                .handleAPIQuota(conn, authTokenDecoded, costInUsd)
-                .then((account) => {
-                    if (account.error) {
-                        logging.error(NAMESPACE, account.user.did, 'Error while trying to find the user in the database: ', account.error);
-                        return res.status(account.retCode).json(commonService.returnError(network, account.retCode, account.error));
-                    }
-                    account.user.save();
-                    return res.status(200).json(commonService.returnSuccess(network, 200, data, account.quota));
-                })
-                .catch((error) => {
-                    logging.error(NAMESPACE, '', 'Error while trying to verify account API quota', error);
-
-                    return res.status(500).json(commonService.returnError(network, 500, error));
-                });
-        })
-        .catch((error: any) => {
-            logging.error(NAMESPACE, 'Error while trying to get the latest block info: ', error);
-
-            return res.status(500).json(commonService.returnError(network, 500, error));
-        });
-    return result;
+        const costInUsd = 0.001;
+        const [account, data] = await Promise.all([
+            accountFunction.handleAPIQuota(conn, authTokenDecoded, costInUsd),
+            conn.LatestBlockchainState.findOne({ chain: config.blockchain.escSidechain.name })
+        ]);
+        if (account.error) {
+            logging.error(NAMESPACE, account.user.did, 'Error while trying to find the user in the database: ', account.error);
+            return res.status(account.retCode).json(commonService.returnError(network, account.retCode, account.error));
+        }
+        account.user.save();
+        return res.status(200).json(commonService.returnSuccess(network, 200, data, account.quota));
+    } catch (error) {
+        logging.error(NAMESPACE, '', 'Error while trying to get info from the latest block: ', error);
+        return res.status(500).json(commonService.returnError(network, 500, error));
+    }
 };
 
 const getTokenBalance = async (req: Request, res: Response, next: NextFunction) => {
@@ -54,43 +44,34 @@ const getTokenBalance = async (req: Request, res: Response, next: NextFunction) 
     network = network ? network : config.blockchain.mainnet;
     if (!config.blockchain.validNetworks.includes(network)) network = config.blockchain.mainnet;
 
-    const conn = network === config.blockchain.testnet ? connTestnet : connMainnet;
-    const isTestnet = network === config.blockchain.testnet ? true : false;
+    try {
+        const conn = network === config.blockchain.testnet ? connTestnet : connMainnet;
+        const isTestnet = network === config.blockchain.testnet ? true : false;
 
-    const result: any = await rpcServiceEvm
-        .getTokenBalance(config.blockchain.chainEsc, tokenAddress, walletAddress, isTestnet)
-        .then((balanceResponse) => {
-            if (balanceResponse.meta.message === 'OK') {
-                const data = {
-                    value: balanceResponse.data.value
-                };
-                const costInUsd = 0.001;
-                accountFunction
-                    .handleAPIQuota(conn, authTokenDecoded, costInUsd)
-                    .then((account) => {
-                        if (account.error) {
-                            logging.error(NAMESPACE, account.user.did, 'Error while trying to find the user in the database: ', account.error);
-                            return res.status(account.retCode).json(commonService.returnError(network, account.retCode, account.error));
-                        }
-                        account.user.save();
-                        return res.status(200).json(commonService.returnSuccess(network, 200, data, account.quota));
-                    })
-                    .catch((error) => {
-                        logging.error(NAMESPACE, '', 'Error while trying to verify account API quota', error);
+        const costInUsd = 0.001;
+        const [account, balanceResponse] = await Promise.all([
+            accountFunction.handleAPIQuota(conn, authTokenDecoded, costInUsd),
+            rpcServiceEvm.getTokenBalance(config.blockchain.chainEsc, tokenAddress, walletAddress, isTestnet)
+        ]);
+        if (account.error) {
+            logging.error(NAMESPACE, account.user.did, 'Error while trying to find the user in the database: ', account.error);
+            return res.status(account.retCode).json(commonService.returnError(network, account.retCode, account.error));
+        }
 
-                        return res.status(500).json(commonService.returnError(network, 500, error));
-                    });
-            } else {
-                logging.error(NAMESPACE, '', `Error while getting balance of '${walletAddress}' for the token '${tokenAddress}': `, balanceResponse.error);
-                return res.status(balanceResponse.meta.code).json(commonService.returnError(network, balanceResponse.meta.code, balanceResponse.error));
-            }
-        })
-        .catch((error: any) => {
-            logging.error(NAMESPACE, '', 'Error while trying to get balance of an address: ', error);
-
-            return res.status(500).json(commonService.returnError(network, 500, error));
-        });
-    return result;
+        if (balanceResponse.meta.message === 'OK') {
+            const data = {
+                value: balanceResponse.data.value
+            };
+            account.user.save();
+            return res.status(200).json(commonService.returnSuccess(network, 200, data, account.quota));
+        } else {
+            logging.error(NAMESPACE, '', `Error while getting balance of '${walletAddress}' for the token '${tokenAddress}': `, balanceResponse.error);
+            return res.status(balanceResponse.meta.code).json(commonService.returnError(network, balanceResponse.meta.code, balanceResponse.error));
+        }
+    } catch (error) {
+        logging.error(NAMESPACE, '', 'Error while trying to get token balance of an address: ', error);
+        return res.status(500).json(commonService.returnError(network, 500, error));
+    }
 };
 
 export default {

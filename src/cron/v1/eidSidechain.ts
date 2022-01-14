@@ -31,19 +31,19 @@ async function setLatestBlockInfo(network: string) {
         const conn = network === config.blockchain.testnet ? connTestnet : connMainnet;
         const isTestnet = network === config.blockchain.testnet ? true : false;
 
-        const height = await rpcServiceEvm.getBlockHeight(config.blockchain.chainEid, isTestnet).then((heightResponse) => {
-            const currentHeight: number = heightResponse.data.height - 1;
-            return currentHeight;
-        });
+        const [heightResponse, state] = await Promise.all([
+            rpcServiceEvm.getBlockHeight(config.blockchain.chainEid, isTestnet),
+            conn.LatestBlockchainState.findOne({ chain: config.blockchain.eidSidechain.name }).exec()
+        ]);
+        const height = heightResponse.data.height - 1;
 
-        const state = await conn.LatestBlockchainState.findOne({ chain: config.blockchain.eidSidechain.name }).exec();
         const latestState =
             state ||
-            new conn.LatestBlockchainState({
+            (await new conn.LatestBlockchainState({
                 _id: new mongoose.Types.ObjectId(),
                 chain: config.blockchain.eidSidechain.name,
                 network
-            });
+            }).save());
         const block = await web3.eth.getBlock(height);
         latestState.height = height;
         latestState.block = block;

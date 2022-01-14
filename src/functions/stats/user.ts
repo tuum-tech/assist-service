@@ -20,53 +20,49 @@ async function getStats(network: string, beginDate: any, endDate: Date, reset: b
         error: null
     };
 
-    // Aggregate users info
-    let createdAtFilter = { $lt: endDate };
-    if (beginDate !== null) {
-        const greaterThanEqualToFilter = { $gte: beginDate };
-        createdAtFilter = { ...createdAtFilter, ...greaterThanEqualToFilter };
-    }
+    try {
+        // Aggregate users info
+        let createdAtFilter = { $lt: endDate };
+        if (beginDate !== null) {
+            const greaterThanEqualToFilter = { $gte: beginDate };
+            createdAtFilter = { ...createdAtFilter, ...greaterThanEqualToFilter };
+        }
 
-    await conn.User.find({ createdAt: createdAtFilter })
-        .select('-password')
-        .select('-balance')
-        .select('-orderId')
-        .exec()
-        .then((users: any) => {
-            users.map((user: any) => {
-                const countToday = user.requests.today;
-                const countAll = user.requests.all;
-                const exhaustedQuota = user.requests.exhaustedQuota;
-                generalUserStats.data.requests.today += countToday;
-                generalUserStats.data.requests.all += countAll;
-                generalUserStats.data.requests.exhaustedQuota += exhaustedQuota;
-                generalUserStats.data.numUsers += 1;
-                generalUserStats.data.users[user.username] = {
-                    today: countToday,
-                    all: countAll,
-                    exhaustedQuota
+        const users = await conn.User.find({ createdAt: createdAtFilter }).select('-password').select('-balance').select('-orderId').exec();
+        users.map((user: any) => {
+            const countToday = user.requests.today;
+            const countAll = user.requests.all;
+            const exhaustedQuota = user.requests.exhaustedQuota;
+            generalUserStats.data.requests.today += countToday;
+            generalUserStats.data.requests.all += countAll;
+            generalUserStats.data.requests.exhaustedQuota += exhaustedQuota;
+            generalUserStats.data.numUsers += 1;
+            generalUserStats.data.users[user.username] = {
+                today: countToday,
+                all: countAll,
+                exhaustedQuota
+            };
+            if (user.did) {
+                generalUserStats.data.users[user.username].did = user.did;
+            }
+            if (reset === true && (user.accountType === config.user.premiumAccountType || network === config.blockchain.testnet)) {
+                user.requests.today = 0;
+                const isLastDay = (dt: Date) => {
+                    const test = new Date(dt.getTime());
+                    test.setDate(test.getDate() + 1);
+                    return test.getDate() === 1;
                 };
-                if (user.did) {
-                    generalUserStats.data.users[user.username].did = user.did;
+                if (network === config.blockchain.testnet || isLastDay(endDate) === true) {
+                    user.requests.exhaustedQuota = 0;
                 }
-                if (reset === true && (user.accountType === config.user.premiumAccountType || network === config.blockchain.testnet)) {
-                    user.requests.today = 0;
-                    const isLastDay = (dt: Date) => {
-                        const test = new Date(dt.getTime());
-                        test.setDate(test.getDate() + 1);
-                        return test.getDate() === 1;
-                    };
-                    if (network === config.blockchain.testnet || isLastDay(endDate) === true) {
-                        user.requests.exhaustedQuota = 0;
-                    }
-                    user.save();
-                }
-            });
-        })
-        .catch((error: any) => {
-            logging.error(NAMESPACE, '', 'Error while trying to retrieve users from the database: ', error);
-            generalUserStats.error = error;
+                user.save();
+            }
         });
+    } catch (error) {
+        logging.error(NAMESPACE, '', 'Error while trying to get aggregate users: ', error);
+
+        generalUserStats.error = error;
+    }
 
     return generalUserStats;
 }

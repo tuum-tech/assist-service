@@ -132,40 +132,46 @@ async function getSupplyMtrl(network: string, tokenAddress: string, q: string) {
     const data = {
         value: 100000000
     };
-    if (q === 'total' || q === 'max') {
-        return commonService.returnSuccess(network, 200, data);
-    } else {
-        const balanceLiquidityWallet = await getTokenBalance(network, tokenAddress, '0x15a236cfbf5221f35ce9f83f56a646fe2950c624', false).then((balanceResponse) => {
-            if (balanceResponse.meta.message === 'OK') {
-                return balanceResponse.data.value;
-            } else {
-                return 0;
-            }
-        });
-        const balanceTreasuryWallet = await getTokenBalance(network, tokenAddress, '0x6d337b9882a29c246faeba4c854830d8884fcca9', false).then((balanceResponse) => {
-            if (balanceResponse.meta.message === 'OK') {
-                return balanceResponse.data.value;
-            } else {
-                return 0;
-            }
-        });
-        const userAcquisitionWallet = await getTokenBalance(network, tokenAddress, '0x5e7606c1fb2bdc171dfbd6c47bb909960992f735', false).then((balanceResponse) => {
-            if (balanceResponse.meta.message === 'OK') {
-                return balanceResponse.data.value;
-            } else {
-                return 0;
-            }
-        });
-        const teamVestingWallet = await getTokenBalance(network, tokenAddress, '0x34312d7ccc11486bb725428773d5def8371c689b', false).then((balanceResponse) => {
-            if (balanceResponse.meta.message === 'OK') {
-                return balanceResponse.data.value;
-            } else {
-                return 0;
-            }
-        });
-        const circSupply = 100000000 - (balanceLiquidityWallet + balanceTreasuryWallet + userAcquisitionWallet + teamVestingWallet);
-        data.value = circSupply;
-        return commonService.returnSuccess(network, 200, data);
+    try {
+        if (q === 'total' || q === 'max') {
+            return commonService.returnSuccess(network, 200, data);
+        } else {
+            const balanceLiquidityWallet = await getTokenBalance(network, tokenAddress, '0x15a236cfbf5221f35ce9f83f56a646fe2950c624', false).then((balanceResponse) => {
+                if (balanceResponse.meta.message === 'OK') {
+                    return balanceResponse.data.value;
+                } else {
+                    return 0;
+                }
+            });
+            const balanceTreasuryWallet = await getTokenBalance(network, tokenAddress, '0x6d337b9882a29c246faeba4c854830d8884fcca9', false).then((balanceResponse) => {
+                if (balanceResponse.meta.message === 'OK') {
+                    return balanceResponse.data.value;
+                } else {
+                    return 0;
+                }
+            });
+            const userAcquisitionWallet = await getTokenBalance(network, tokenAddress, '0x5e7606c1fb2bdc171dfbd6c47bb909960992f735', false).then((balanceResponse) => {
+                if (balanceResponse.meta.message === 'OK') {
+                    return balanceResponse.data.value;
+                } else {
+                    return 0;
+                }
+            });
+            const teamVestingWallet = await getTokenBalance(network, tokenAddress, '0x34312d7ccc11486bb725428773d5def8371c689b', false).then((balanceResponse) => {
+                if (balanceResponse.meta.message === 'OK') {
+                    return balanceResponse.data.value;
+                } else {
+                    return 0;
+                }
+            });
+            const circSupply = 100000000 - (balanceLiquidityWallet + balanceTreasuryWallet + userAcquisitionWallet + teamVestingWallet);
+            data.value = circSupply;
+            return commonService.returnSuccess(network, 200, data);
+        }
+    } catch (error) {
+        logging.error(NAMESPACE, '', 'Error while trying to get asupply of MTRL: ', error);
+
+        return commonService.returnError(network, 500, error);
     }
 }
 

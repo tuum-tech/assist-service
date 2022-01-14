@@ -14,10 +14,6 @@ const getEidSidechainHeaders = (): any => {
 };
 
 async function signTx(network: string, wallet: any, payload: string, index: number = 0) {
-    const rpcUrl = network === config.blockchain.mainnet ? config.blockchain.eidSidechain.mainnet.rpcUrl : config.blockchain.eidSidechain.testnet.rpcUrl;
-    const contractAddress = network === config.blockchain.mainnet ? config.blockchain.eidSidechain.mainnet.didContractAddress : config.blockchain.eidSidechain.testnet.didContractAddress;
-    const chainId = network === config.blockchain.mainnet ? config.blockchain.eidSidechain.mainnet.chainId : config.blockchain.eidSidechain.testnet.chainId;
-
     const PUBLISH_CONTRACT_ABI: AbiItem[] = [
         {
             inputs: [],
@@ -46,6 +42,10 @@ async function signTx(network: string, wallet: any, payload: string, index: numb
         error: null
     };
     try {
+        const rpcUrl = network === config.blockchain.mainnet ? config.blockchain.eidSidechain.mainnet.rpcUrl : config.blockchain.eidSidechain.testnet.rpcUrl;
+        const contractAddress = network === config.blockchain.mainnet ? config.blockchain.eidSidechain.mainnet.didContractAddress : config.blockchain.eidSidechain.testnet.didContractAddress;
+        const chainId = network === config.blockchain.mainnet ? config.blockchain.eidSidechain.mainnet.chainId : config.blockchain.eidSidechain.testnet.chainId;
+
         const web3 = new Web3(rpcUrl);
         const contract = new web3.eth.Contract(PUBLISH_CONTRACT_ABI, contractAddress);
 
@@ -111,6 +111,7 @@ async function resolveDid(network: string, did: string) {
         ],
         id: '1'
     };
+
     const rpcUrl = network === config.blockchain.mainnet ? config.blockchain.eidSidechain.mainnet.rpcUrl : config.blockchain.eidSidechain.testnet.rpcUrl;
     const res: any = await commonService.handleRoute(rpcUrl, body, getEidSidechainHeaders(), true);
     if (res.error) {
