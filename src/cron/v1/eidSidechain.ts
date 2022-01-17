@@ -90,8 +90,23 @@ async function publishDIDTxPending(network: string) {
 
         const conn = network === config.blockchain.testnet ? connTestnet : connMainnet;
 
-        const didTxes = await conn.DidTx.find({ status: config.txStatus.pending }).exec();
-        const wallet = config.blockchain.eidSidechain.wallets.keystores[Math.floor(Math.random() * config.blockchain.eidSidechain.wallets.keystores.length)];
+        let [didTxes, appStat] = await Promise.all([conn.DidTx.find({ status: config.txStatus.pending }).exec(), conn.AppStat.findOne({ network }).exec()]);
+
+        const walletsToChooseFrom = JSON.parse(JSON.stringify(config.blockchain.eidSidechain.wallets.keystores));
+
+        if (!appStat) {
+            appStat = await new conn.AppStat({
+                _id: new mongoose.Types.ObjectId(),
+                network,
+                walletsInUse: []
+            }).save();
+        }
+
+        appStat.walletsInUse.map((_: string, index: any) => {
+            walletsToChooseFrom.splice(index, 1);
+        });
+
+        const wallet = walletsToChooseFrom[Math.floor(Math.random() * walletsToChooseFrom.length)];
         didTxes.map(async (didTx: any, index: any) => {
             if (didTx.walletUsed) {
                 logging.info(NAMESPACE, '', `${didTx.did} is already being published`);
@@ -100,6 +115,10 @@ async function publishDIDTxPending(network: string) {
             logging.info(NAMESPACE, '', `Using wallet ${wallet.address} to publish ${didTx.did}`);
 
             didTx.walletUsed = wallet.address;
+            if (!appStat.walletsInUse.includes(wallet.address)) {
+                appStat.walletsInUse.push(wallet.address);
+            }
+            await appStat.save();
             await didTx.save();
 
             const res = await rpcServiceEid.signTx(network, wallet, JSON.stringify(didTx.didRequest), index);
@@ -117,6 +136,8 @@ async function publishDIDTxPending(network: string) {
 
                     didTx.status = config.txStatus.processing;
                     didTx.blockchainTxHash = transactionHash;
+                    appStat.walletsInUse.splice(appStat.walletsInUse.indexOf(wallet.address), 1);
+                    await appStat.save();
                     await didTx.save();
                 });
             }

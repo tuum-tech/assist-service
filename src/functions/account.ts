@@ -9,9 +9,8 @@ const NAMESPACE = 'Function: Account';
 async function handleAPIQuota(conn: any, authTokenDecoded: any, costInUsd: number) {
     const username = authTokenDecoded.username;
 
-    console.log('username: ', username);
-
     const user = await conn.User.findOne({ username }).exec();
+
     const result = {
         user,
         quota: {
@@ -26,6 +25,14 @@ async function handleAPIQuota(conn: any, authTokenDecoded: any, costInUsd: numbe
         retCode: 200,
         error: ''
     };
+    if (!user) {
+        const error = 'The user does not exist';
+        logging.error(NAMESPACE, username, error);
+
+        result.error = error;
+        result.retCode = 401;
+        return result;
+    }
 
     const exhaustedQuota: number = result.user.requests.exhaustedQuota;
     const totalQuota: number = result.user.requests.totalQuota;

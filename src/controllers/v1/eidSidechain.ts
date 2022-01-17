@@ -33,6 +33,10 @@ const publishDIDTx = async (req: Request, res: Response, next: NextFunction) => 
         did = didRequestPayload.id.replace('did:elastos:', '').split('#')[0];
 
         const a = await account;
+        if (a.error) {
+            logging.error(NAMESPACE, '', 'Error while trying to find the user in the database: ', a.error);
+            return res.status(a.retCode).json(commonService.returnError(network, a.retCode, a.error));
+        }
         if (Boolean(upgradeAccount) === true) {
             if (network === config.blockchain.mainnet) {
                 if (a.user.accountType !== config.user.premiumAccountType) {
