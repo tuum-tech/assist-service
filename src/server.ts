@@ -76,7 +76,7 @@ app.use((err: Error, req: any, res: any, next: any) => {
     };
 
     try {
-        console.log('congrats you hit the error middleware');
+        logging.info(NAMESPACE, '', `METHOD: [${req.method}] - URL: [${req.url}] - IP: [${req.socket.remoteAddress}]`);
     } catch (err) {
         res.status(404).json(commonService.returnError(getNetwork(), 404, err));
     }

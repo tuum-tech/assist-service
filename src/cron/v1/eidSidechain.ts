@@ -108,6 +108,19 @@ async function publishDIDTxPending(network: string) {
 
         const wallet = walletsToChooseFrom[Math.floor(Math.random() * walletsToChooseFrom.length)];
         didTxes.map(async (didTx: any, index: any) => {
+            const now = new Date();
+            const createdAt = new Date(didTx.createdAt);
+            const timePassedInSeconds: number = (now.getTime() - createdAt.getTime()) / 1000;
+
+            if (timePassedInSeconds > 120) {
+                const error = 'It has been 2 minutes since this transaction has been in Pending state. This transaction will now be cancelled. Please try publishing again later';
+                logging.info(NAMESPACE, didTx.did, error);
+                didTx.status = config.txStatus.cancelled;
+                didTx.extraInfo = {
+                    error
+                };
+                await didTx.save();
+            }
             if (didTx.walletUsed) {
                 logging.info(NAMESPACE, '', `${didTx.did} is already being published`);
                 return;
@@ -164,6 +177,21 @@ async function publishDIDTxProcessing(network: string) {
 
         const didTxes = await conn.DidTx.find({ status: config.txStatus.processing }).exec();
         didTxes.map(async (didTx: any) => {
+            const now = new Date();
+            const createdAt = new Date(didTx.createdAt);
+            const timePassedInSeconds: number = (now.getTime() - createdAt.getTime()) / 1000;
+
+            if (timePassedInSeconds > 120) {
+                const error = 'It has been 2 minutes since this transaction has been in Processing state. This transaction will now be cancelled. Please try publishing again later';
+                logging.info(NAMESPACE, didTx.did, error);
+
+                didTx.status = config.txStatus.cancelled;
+                didTx.extraInfo = {
+                    error
+                };
+                await didTx.save();
+            }
+
             await web3.eth.getTransactionReceipt(didTx.blockchainTxHash, async (err, txReceipt) => {
                 logging.info(NAMESPACE, didTx.did, `${didTx.did}: ${txReceipt}`);
                 if (!txReceipt) {
