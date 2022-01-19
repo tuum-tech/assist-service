@@ -157,7 +157,7 @@ async function getSupplyMtrl(network: string, tokenAddress: string, q: string) {
                     return 0;
                 }
             });
-            const teamVestingWallet = await getTokenBalance(network, tokenAddress, '0x34312d7ccc11486bb725428773d5def8371c689b', false).then((balanceResponse) => {
+            const teamVestingWallet = await getTokenBalance(network, tokenAddress, '0x8071db05f6f3d78c31b2a157348d866b4b9339fe', false).then((balanceResponse) => {
                 if (balanceResponse.meta.message === 'OK') {
                     return balanceResponse.data.value;
                 } else {
